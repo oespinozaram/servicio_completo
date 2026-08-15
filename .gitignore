@@ -1,5 +1,8 @@
 /.venv/
 .env
-.idea
+.idea/
 AGENTS.MD
 db.sqlite3
+*.pyc
+__pycache__/
+
