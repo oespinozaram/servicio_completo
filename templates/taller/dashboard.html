@@ -1,0 +1,84 @@
+<!-- taller/templates/taller/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Dashboard - Resumen de Hoy{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Fila de Tarjetas de Métricas (KPIs) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Tarjeta Financiera: Ingresos -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Ingresos del Día</h3>
+                <span class="text-3xl font-bold text-green-600">${{ ingreso_total|floatformat:2 }}</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-500 font-medium">
+                <span>💵 Efectivo: ${{ ingreso_efectivo|floatformat:2 }}</span>
+                <span>💳 Tarjeta/Transfer: ${{ ingreso_tarjeta|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <!-- Tarjeta Operativa: Bicis Recibidas -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Bicicletas Recibidas Hoy</h3>
+                <span class="text-3xl font-bold text-blue-600">{{ bicis_recibidas_hoy }}</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <a href="{% url 'taller:nueva_orden' %}" class="text-xs text-blue-500 hover:text-blue-700 font-semibold transition">
+                    + Registrar nueva bicicleta
+                </a>
+            </div>
+        </div>
+
+        <!-- Tarjeta Operativa: Listas para Entregar -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Por Entregar (Listas)</h3>
+                <span class="text-3xl font-bold text-yellow-600">{{ bicis_listas }}</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <a href="{% url 'taller:kanban' %}" class="text-xs text-yellow-600 hover:text-yellow-700 font-semibold transition">
+                    Ir al Tablero Kanban &rarr;
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sección de Últimos Movimientos -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800">Prioridad: Próximas Entregas</h3>
+        </div>
+        <ul class="divide-y divide-gray-200">
+            {% for orden in proximas_entregas %}
+            <li class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition">
+                <div>
+                    <p class="text-sm font-bold text-gray-800">🚲 {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</p>
+                    <p class="text-xs text-gray-500 mt-1">👤 Cliente: {{ orden.bicicleta.cliente.nombre }}</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                        {% if orden.estado == 'LISTA' %}bg-green-100 text-green-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ orden.get_estado_display }}
+                    </span>
+                    <a href="{% url 'taller:kanban' %}" class="text-xs font-medium text-blue-600 hover:text-blue-800">
+                        Ver en Tablero
+                    </a>
+                </div>
+            </li>
+            {% empty %}
+            <li class="px-6 py-4 text-center text-sm text-gray-500 italic">
+                No hay bicicletas pendientes por entregar.
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+{% endblock %}

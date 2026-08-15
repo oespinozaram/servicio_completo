@@ -1,0 +1,92 @@
+<!-- taller/templates/taller/agenda.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Agenda de Citas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+
+    <!-- Columna Izquierda: Formulario Rápido -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">📅 Agendar Cita</h3>
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <div><label class="text-sm font-medium text-gray-700">Cliente</label>{{ form.nombre_cliente }}</div>
+                <div><label class="text-sm font-medium text-gray-700">Teléfono (WhatsApp)</label>{{ form.telefono }}</div>
+                <div><label class="text-sm font-medium text-gray-700">Asunto / Servicio</label>{{ form.asunto }}</div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-sm font-medium text-gray-700">Fecha</label>{{ form.fecha }}</div>
+                    <div><label class="text-sm font-medium text-gray-700">Hora</label>{{ form.hora }}</div>
+                </div>
+
+                <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded transition mt-4">
+                    Confirmar Cita
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Lista de Citas -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Próximos Ingresos</h3>
+
+            <div class="space-y-4">
+                {% for cita in citas_proximas %}
+
+                <div class="flex items-center justify-between p-4 rounded-lg border {% if cita.fecha == hoy %}border-blue-300 bg-blue-50{% else %}border-gray-200 bg-white{% endif %} transition hover:shadow-sm">
+                    <div class="flex items-start space-x-4">
+                        <!-- Bloque de Fecha -->
+                        <div class="flex flex-col items-center justify-center bg-white border rounded-md px-3 py-2 min-w-[70px]">
+                            <span class="text-xs text-gray-500 font-bold uppercase">{{ cita.fecha|date:"M" }}</span>
+                            <span class="text-xl font-bold text-gray-900">{{ cita.fecha|date:"d" }}</span>
+                        </div>
+
+                        <!-- Datos -->
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-bold text-gray-800 text-lg">{{ cita.hora|time:"H:i" }} - {{ cita.nombre_cliente }}</h4>
+                                {% if cita.estado == 'ATENDIDA' %}
+                                    <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-800">En Taller</span>
+                                {% elif cita.fecha == hoy %}
+                                    <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800">HOY</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">📞 {{ cita.telefono }}</p>
+                            <p class="text-sm text-gray-500 mt-1 italic">"{{ cita.asunto }}"</p>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción (HTMX) -->
+                    {% if cita.estado == 'PENDIENTE' %}
+                    <div id="accion-cita-{{ cita.id }}" class="flex-shrink-0">
+                        <button hx-post="{% url 'taller:marcar_cita_atendida' cita.id %}"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-target="#accion-cita-{{ cita.id }}"
+                                hx-swap="innerHTML"
+                                class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded text-sm transition">
+                            Marcar Llegada &check;
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% empty %}
+                <div class="text-center py-10 text-gray-500">
+                    <p class="text-lg">No hay citas programadas.</p>
+                    <p class="text-sm mt-1">El calendario está libre.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fade-out { animation: fadeout 2s forwards; }
+    @keyframes fadeout { 0%, 70% { opacity: 1; } 100% { opacity: 0; display: none; } }
+</style>
+{% endblock %}

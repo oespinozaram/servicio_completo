@@ -1,0 +1,5 @@
+/.venv/
+.env
+.idea
+AGENTS.MD
+db.sqlite3

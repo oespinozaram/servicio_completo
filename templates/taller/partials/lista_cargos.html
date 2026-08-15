@@ -1,0 +1,49 @@
+<!-- taller/templates/taller/partials/lista_cargos.html -->
+
+{% if orden.cargos.all %}
+    <!-- Lista de Conceptos -->
+    <ul class="divide-y divide-gray-100 mb-4">
+        {% for cargo in orden.cargos.all %}
+        <li class="py-3 flex justify-between items-center text-sm group">
+            <div class="flex-1">
+                <p class="font-semibold text-gray-800">{{ cargo.descripcion }}</p>
+                <p class="text-xs text-gray-500">{{ cargo.cantidad }} un. x ${{ cargo.precio|floatformat:2 }}</p>
+            </div>
+
+            <div class="font-bold text-gray-900 mr-4">
+                ${{ cargo.subtotal|floatformat:2 }}
+            </div>
+
+            <!-- Botón de Eliminar (Aparece más fuerte al pasar el mouse - group-hover) -->
+            <button type="button"
+                    class="text-gray-300 hover:text-red-500 transition"
+                    title="Eliminar cargo"
+                    hx-post="{% url 'taller:eliminar_cargo' cargo.id %}"
+                    hx-target="#lista-cargos-container">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Total Dinámico (¡Ahora sí se actualiza en tiempo real!) -->
+    <div class="border-t border-gray-200 pt-3 flex justify-between items-center bg-gray-50 -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
+        <span class="font-bold text-gray-700 uppercase text-xs tracking-wider">Gran Total</span>
+        <span class="font-black text-xl text-blue-700" id="total-orden-actualizado">${{ orden.total_orden|floatformat:2 }}</span>
+    </div>
+
+{% else %}
+    <!-- Estado Vacío -->
+    <div class="text-center py-6">
+        <p class="text-sm text-gray-500 italic">No hay cargos registrados aún.</p>
+        <p class="text-xs text-gray-400 mt-1">Busca un servicio o refacción en la barra de abajo para agregarlo.</p>
+    </div>
+
+    <!-- Total en Ceros -->
+    <div class="border-t border-gray-200 pt-3 flex justify-between items-center mt-4">
+        <span class="font-bold text-gray-700 uppercase text-xs tracking-wider">Gran Total</span>
+        <span class="font-black text-xl text-gray-400">$0.00</span>
+    </div>
+{% endif %}

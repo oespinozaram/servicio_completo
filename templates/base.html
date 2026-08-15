@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Servicio Completo - Taller{% endblock %}</title>
+
+    <!-- Tailwind CSS (Vía CDN para el MVP) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX (Para reactividad sin JavaScript) -->
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+
+    <!-- Configuración crucial: Enviar CSRF Token de Django en peticiones HTMX -->
+    <script>
+        document.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+    </script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden">
+
+    <!-- Sidebar (Barra de Navegación Lateral) -->
+    <aside class="w-64 bg-gray-900 text-white flex flex-col shadow-xl z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-800">
+            <!-- Aquí luego puedes cargar dinámicamente el logo del Tenant -->
+            <h1 class="text-xl font-bold tracking-widest text-blue-400">Servicio Completo</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6">
+            <ul class="space-y-2">
+                <li>
+                    <a href="{% url 'taller:dashboard' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        📊 Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'taller:kanban' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        📋 Órdenes (Kanban)
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'taller:agenda' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        📅 Agenda
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'clientes:directorio' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        👥 Clientes (CRM)
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'inventario:lista_servicios' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        🛠️ Catálogo de Servicios
+                    </a>
+                </li>
+                {% if request.user.rol == 'ADMIN' %}
+                    <li>
+                        <a href="{% url 'inventario:lista' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                            📦 Inventario
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'taller:corte_caja' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                            💰 Corte de Caja
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <!-- Información del Usuario y Sucursal Activa -->
+        <div class="p-4 bg-gray-950 text-sm">
+            {% if user.is_authenticated %}
+                <p class="font-semibold text-gray-200">{{ user.username }}</p>
+                <p class="text-gray-400 text-xs mt-1">
+                    📍 {{ user.sucursal.nombre|default:"Sin Sucursal Asignada" }}
+                </p>
+                <p class="text-gray-500 text-xs">
+                    Rol: {{ user.get_rol_display }}
+                </p>
+            {% else %}
+                <p class="text-gray-400">Sesión no iniciada</p>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Área de Contenido Principal -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+        <!-- Header Superior -->
+        <header class="h-16 bg-white shadow flex items-center justify-between px-8 z-10">
+            <h2 class="text-2xl font-semibold text-gray-800">
+                {% block header_title %}Dashboard{% endblock %}
+            </h2>
+
+            <!-- Buscador Global HTMX -->
+            <div class="relative w-full max-w-sm hidden sm:block">
+                <div class="relative flex items-center">
+                    <span class="absolute left-3 text-gray-400">🔍</span>
+                    <input type="text" id="buscador-global" name="q" autocomplete="off"
+                           placeholder="Buscar refacción... (Ctrl+K)"
+                           class="w-full pl-9 pr-4 py-2 bg-gray-100 border-transparent rounded-md text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                           hx-get="{% url 'inventario:buscar_global' %}"
+                           hx-trigger="keyup changed delay:300ms, search"
+                           hx-target="#resultados-globales-container">
+                </div>
+
+                <!-- Aquí HTMX inyectará el menú desplegable -->
+                <div id="resultados-globales-container"></div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                {% if user.is_authenticated %}
+                    <form method="POST" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-700 transition cursor-pointer">
+                            Cerrar Sesión
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Contenedor Dinámico para las Vistas -->
+        <div class="flex-1 overflow-y-auto p-8 bg-gray-50">
+            {% block content %}
+                <!-- El código de tus otras plantillas se inyectará aquí -->
+            {% endblock %}
+        </div>
+
+    </main>
+<!-- Al final de base.html (justo antes de </body>), añade este pequeño listener para el atajo de teclado -->
+<script>
+    document.addEventListener('keydown', function(event) {
+        // Escucha Ctrl + K (Windows/Linux) o Cmd + K (Mac)
+        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+            event.preventDefault(); // Evita que el navegador abra su propio buscador
+            document.getElementById('buscador-global').focus();
+        }
+    });
+
+    // Oculta los resultados si el usuario hace clic fuera del buscador
+    document.addEventListener('click', function(event) {
+        const container = document.getElementById('resultados-globales-container');
+        const input = document.getElementById('buscador-global');
+        if (!container.contains(event.target) && event.target !== input) {
+            container.innerHTML = '';
+            input.value = ''; // Opcional: limpia la barra de búsqueda al hacer clic fuera
+        }
+    });
+</script>
+</body>
+</html>

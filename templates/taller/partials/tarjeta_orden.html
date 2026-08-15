@@ -1,0 +1,36 @@
+<div class="bg-white p-4 rounded shadow border border-gray-200 hover:shadow-md cursor-grab transition-shadow">
+    <!-- Encabezado de la Tarjeta -->
+    <div class="flex justify-between items-start mb-2">
+        <span class="text-xs font-bold text-gray-500">#{{ orden.id }}</span>
+        <span class="text-[10px] bg-{{ color }}-100 text-{{ color }}-700 px-2 py-0.5 rounded-full font-semibold border border-{{ color }}-200">
+            {{ orden.bicicleta.get_tipo_display }}
+        </span>
+    </div>
+
+    <!-- Datos de la Bici y Cliente -->
+    <h4 class="font-bold text-gray-800 text-sm mb-1 truncate" title="{{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}">
+        🚲 {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}
+    </h4>
+    <p class="text-xs text-gray-600 mb-3 truncate">
+        👤 {{ orden.bicicleta.cliente.nombre }}
+    </p>
+
+    <!-- Asignación e Interacción -->
+    <div class="flex justify-between items-center border-t border-gray-100 pt-2">
+        <div class="text-xs text-gray-500">
+            {% if orden.tecnico %}
+                🛠️ {{ orden.tecnico.username }}
+            {% else %}
+                <span class="text-red-400">Sin asignar</span>
+            {% endif %}
+        </div>
+
+        <!-- Botón HTMX (Listo para la próxima fase) -->
+        <button class="text-blue-500 hover:text-blue-700 text-xs font-semibold cursor-pointer"
+                hx-get="{% url 'taller:detalle_orden' orden.id %}"
+                hx-target="#slide-over-container"
+                hx-swap="innerHTML">
+            Ver Detalles &rarr;
+        </button>
+    </div>
+</div>

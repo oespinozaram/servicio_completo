@@ -1,0 +1,36 @@
+<!-- clientes/templates/clientes/partials/filas_directorio.html -->
+{% for cliente in clientes %}
+<tr class="hover:bg-gray-50 transition">
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span class="text-gray-600 font-bold text-lg">{{ cliente.nombre|first|upper }}</span>
+            </div>
+            <div class="ml-4">
+                <div class="text-sm font-bold text-gray-900">{{ cliente.nombre }}</div>
+                <div class="text-xs text-gray-500">Registrado en sistema</div>
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">📞 {{ cliente.telefono|default:"Sin teléfono" }}</div>
+        <div class="text-xs text-gray-500">✉️ {{ cliente.email|default:"Sin correo" }}</div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-center">
+        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+            {{ cliente.num_bicis }} bici(s)
+        </span>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <a href="{% url 'clientes:perfil' cliente.id %}" class="text-blue-500 hover:text-blue-700 font-semibold transition" title="Ver Historial">
+            Ver Perfil &rarr;
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="4" class="px-6 py-10 text-center text-gray-500 italic">
+        No se encontraron clientes con esa búsqueda.
+    </td>
+</tr>
+{% endfor %}

@@ -1,0 +1,68 @@
+<!-- clientes/templates/clientes/nuevo_cliente_bici.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Registrar Nuevo Cliente y Bicicleta{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-8">
+    <form method="POST" class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2">
+            <!-- Columna Izquierda: Datos del Cliente -->
+            <div class="p-6 border-b md:border-b-0 md:border-r border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">👤 Datos del Ciclista</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                        {{ cliente_form.nombre }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono (WhatsApp)</label>
+                        {{ cliente_form.telefono }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico (Opcional)</label>
+                        {{ cliente_form.email }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Datos de la Bicicleta -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">🚲 Datos de la Bicicleta</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                            {{ bici_form.marca }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                            {{ bici_form.modelo }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Bicicleta</label>
+                        {{ bici_form.tipo }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Serie (Opcional)</label>
+                        {{ bici_form.n_serie }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="bg-gray-100 px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+            <a href="{% url 'taller:nueva_orden' %}" class="text-sm text-gray-500 hover:text-gray-700 font-medium py-2">
+                Cancelar
+            </a>
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-md shadow transition">
+                Guardar y Continuar
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+<!-- taller/templates/taller/nueva_orden.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Recibir Bicicleta (Nueva Orden){% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-8">
+    
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div class="bg-blue-600 px-6 py-4">
+            <h3 class="text-lg font-semibold text-white">Detalles de Recepción</h3>
+            <p class="text-blue-100 text-sm">Completa los datos para ingresar la bicicleta al taller.</p>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-6">
+            <!-- Token de seguridad obligatorio en Django -->
+            {% csrf_token %}
+            
+            <!-- Campo: Bicicleta -->
+            <div class="relative">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-sm font-medium text-gray-700">Buscar Cliente o Bicicleta</label>
+                        <a href="{% url 'clientes:nuevo_cliente_bici' %}" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded font-medium transition">
+                        + Nuevo Cliente
+                        </a>
+                </div>
+                
+                <!-- El campo oculto real del formulario -->
+                {{ form.bicicleta }}
+                
+                <!-- El input visible de búsqueda -->
+                <input type="text" id="bici-search-input" autocomplete="off"
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                       placeholder="Escribe el nombre del cliente o marca..."
+                       hx-get="{% url 'taller:buscar_bicicletas' %}"
+                       hx-trigger="keyup changed delay:400ms"
+                       hx-target="#search-results"
+                       name="q">
+                
+                <!-- Contenedor donde HTMX inyectará los resultados -->
+                <div id="search-results" class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-100">
+                    <!-- Los resultados aparecerán aquí -->
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-1">Busca por nombre (ej. "Juan") o por marca (ej. "Trek").</p>
+            </div>
+
+            <!-- Campo: Técnico -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mecánico Asignado (Opcional)</label>
+                {{ form.tecnico }}
+            </div>
+
+            <!-- Bloque de Servicio Inicial -->
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg mb-4">
+                <label class="block text-sm font-bold text-blue-900 mb-2">
+                    🛠️ Paquete de Servicio Inicial (Opcional)
+                </label>
+                <select name="servicio_inicial" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
+                    <option value="">-- Solo recibir para diagnóstico (Sin cargos) --</option>
+                    {% for servicio in servicios_disponibles %}
+                        <option value="{{ servicio.id }}">{{ servicio.nombre }} - ${{ servicio.precio_base }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-blue-600 mt-1">
+                    El costo de este servicio se agregará automáticamente al total de la orden.
+                </p>
+            </div>
+
+            <!-- Campo: Notas -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Síntomas / Notas del Cliente</label>
+                {{ form.notas_cliente }}
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
+                <a href="{% url 'taller:kanban' %}" class="text-sm text-gray-500 hover:text-gray-700 font-medium">
+                    Cancelar
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md shadow transition">
+                    Crear Orden de Trabajo
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!-- taller/templates/taller/partials/resultados_cargos.html -->
+
+<ul class="divide-y divide-gray-100 max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+
+    <!-- Sección de Servicios -->
+    {% if servicios %}
+    <li class="bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800 uppercase">🛠️ Servicios</li>
+    {% for s in servicios %}
+    <li class="p-3 hover:bg-gray-50 flex justify-between items-center cursor-pointer transition"
+        hx-post="{% url 'taller:agregar_cargo' orden.id %}"
+        hx-vals='{"tipo": "servicio", "item_id": "{{ s.id }}"}'
+        hx-target="#lista-cargos-container">
+
+        <div class="font-bold text-gray-800 text-sm">{{ s.nombre }}</div>
+
+        <div class="text-right">
+            <span class="text-sm font-bold text-blue-600">${{ s.precio_base }}</span>
+            <span class="text-xs text-gray-400 block">+ Agregar</span>
+        </div>
+    </li>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Sección de Refacciones -->
+    {% if refacciones %}
+    <li class="bg-green-50 px-3 py-1 text-xs font-bold text-green-800 uppercase border-t">📦 Inventario</li>
+    {% for r in refacciones %}
+    <li class="p-3 flex justify-between items-center transition
+        {% if r.stock > 0 %}hover:bg-gray-50 cursor-pointer{% else %}opacity-50 cursor-not-allowed bg-gray-50{% endif %}"
+
+        {% if r.stock > 0 %}
+        hx-post="{% url 'taller:agregar_cargo' orden.id %}"
+        hx-vals='{"tipo": "refaccion", "item_id": "{{ r.id }}"}'
+        hx-target="#lista-cargos-container"
+        {% endif %}>
+
+        <div>
+            <div class="font-bold text-gray-800 text-sm">{{ r.nombre }}</div>
+            <div class="text-xs {% if r.stock > 0 %}text-green-600{% else %}text-red-500{% endif %}">
+                Stock: {{ r.stock }}
+            </div>
+        </div>
+
+        <div class="text-right">
+            <span class="text-sm font-bold text-blue-600">${{ r.precio_venta }}</span>
+            {% if r.stock > 0 %}
+                <span class="text-xs text-gray-400 block">+ Agregar</span>
+            {% else %}
+                <span class="text-xs text-red-500 block font-bold">Agotado</span>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Sin resultados -->
+    {% if not servicios and not refacciones %}
+    <li class="p-4 text-center text-sm text-gray-500">
+        No se encontraron servicios ni piezas.
+    </li>
+    {% endif %}
+</ul>

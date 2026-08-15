@@ -1,0 +1,79 @@
+<!-- clientes/templates/clientes/perfil.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Perfil del Cliente{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-4 space-y-6">
+
+    <!-- Tarjeta de Presentación del Cliente -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+            <div class="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow">
+                <span class="text-blue-600 font-bold text-3xl">{{ cliente.nombre|first|upper }}</span>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ cliente.nombre }}</h2>
+                <div class="mt-2 flex space-x-4 text-sm text-gray-600">
+                    <span class="flex items-center">📞 {{ cliente.telefono|default:"Sin teléfono" }}</span>
+                    <span class="flex items-center">✉️ {{ cliente.email|default:"Sin correo" }}</span>
+                </div>
+            </div>
+        </div>
+        <div>
+            <!-- Botón de WhatsApp rápido (Abre la app si estás en celular o Web si estás en PC) -->
+            {% if cliente.telefono %}
+            <a href="https://wa.me/{{ cliente.telefono|cut:' ' }}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md shadow transition flex items-center">
+                💬 Enviar WhatsApp
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Historial de Reparaciones -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-800">Historial de Reparaciones</h3>
+        </div>
+
+        <div class="divide-y divide-gray-100">
+            {% for orden in historial %}
+            <div class="p-6 hover:bg-gray-50 transition flex justify-between items-center">
+
+                <!-- Info de la Bici y Fecha -->
+                <div>
+                    <div class="flex items-center space-x-3 mb-1">
+                        <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">{{ orden.created_at|date:"d M, Y" }}</span>
+                        <span class="px-2 py-0.5 rounded text-xs font-bold
+                            {% if orden.estado == 'ENTREGADA' %}bg-gray-100 text-gray-600
+                            {% elif orden.estado == 'LISTA' %}bg-green-100 text-green-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ orden.get_estado_display }}
+                        </span>
+                    </div>
+                    <h4 class="text-lg font-bold text-gray-900">🚲 {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</h4>
+                    <p class="text-sm text-gray-500 mt-1">Sucursal: {{ orden.sucursal.nombre }}</p>
+                </div>
+
+                <!-- Resumen Financiero de esa Orden -->
+                <div class="text-right">
+                    <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Total Pagado</p>
+                    <p class="text-2xl font-black {% if orden.pagada %}text-green-600{% else %}text-red-500{% endif %}">
+                        ${{ orden.total_orden|floatformat:2 }}
+                    </p>
+                    {% if not orden.pagada %}
+                        <p class="text-xs text-red-500 font-bold mt-1">PENDIENTE DE PAGO</p>
+                    {% endif %}
+                </div>
+
+            </div>
+            {% empty %}
+            <div class="p-10 text-center text-gray-500">
+                <p class="italic">Este cliente aún no tiene historial de reparaciones en el taller.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
