@@ -2,6 +2,7 @@
 from django.core.exceptions import PermissionDenied
 from functools import wraps
 
+
 def admin_requerido(view_func):
     """Decorador que rechaza a cualquier usuario que no sea ADMIN"""
     @wraps(view_func)

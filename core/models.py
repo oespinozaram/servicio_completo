@@ -9,6 +9,10 @@ class Tenant(models.Model):
     subdominio = models.CharField(max_length=50, unique=True)
     rfc = models.CharField(max_length=20, blank=True)
     activo = models.BooleanField(default=True)
+    modulo_citas = models.BooleanField(default=False, help_text="¿Paga el módulo de agenda/citas?")
+    modulo_inventario_avanzado = models.BooleanField(default=False, help_text="¿Paga control de stock y proveedores?")
+    modulo_facturacion = models.BooleanField(default=False, help_text="¿Paga facturación electrónica?")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

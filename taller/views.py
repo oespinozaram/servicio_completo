@@ -17,6 +17,7 @@ import urllib.parse
 from .utils import enviar_notificacion_whatsapp
 import threading
 from .decorators import admin_requerido
+from core.decorators import modulo_requerido
 
 
 @login_required
@@ -309,6 +310,7 @@ def dashboard_inicio(request):
 
 
 @login_required
+@modulo_requerido('modulo_citas')
 def agenda_citas(request):
     """Muestra la agenda y permite crear nuevas citas"""
     sucursal = request.user.sucursal
@@ -338,6 +340,7 @@ def agenda_citas(request):
 
 
 @login_required
+@modulo_requerido('modulo_citas')
 def marcar_cita_atendida(request, pk):
     """HTMX: Cambia el estado a atendida y redirige inyectando los datos del cliente"""
     if request.method == 'POST':
@@ -378,7 +381,7 @@ def corte_caja(request):
         fecha__date=hoy
     ).select_related('orden__bicicleta__cliente', 'cajero').order_by('-fecha')
 
-    # Sumatorias por método de pago
+    # Sumatorias por metodo de pago
     total_efectivo = pagos_hoy.filter(metodo='EFECTIVO').aggregate(Sum('monto'))['monto__sum'] or 0
     total_tarjeta = pagos_hoy.filter(metodo='TARJETA').aggregate(Sum('monto'))['monto__sum'] or 0
     total_transfer = pagos_hoy.filter(metodo='TRANSFERENCIA').aggregate(Sum('monto'))['monto__sum'] or 0
