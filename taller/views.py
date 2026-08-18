@@ -1,24 +1,52 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from .models import OrdenTrabajo
-from django.shortcuts import redirect
+from django.contrib.auth.hashers import make_password
+from django.db.models.functions import TruncDate
 from .forms import OrdenTrabajoForm, CitaForm
 from django.db.models import Q, F
 from clientes.models import Bicicleta
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from inventario.models import ServicioCatalogo, ItemInventario
-from .models import DetalleOrdenServicio, DetalleOrdenPieza, Pago, Cita, CargoOrden
+from .models import DetalleOrdenServicio, DetalleOrdenPieza, Pago, Cita, CargoOrden, OrdenTrabajo
+from .forms import EmpleadoForm
 from django.db import transaction
-from django.utils import timezone
 from django.db.models import Sum
 from django.urls import reverse
 import urllib.parse
-from .utils import enviar_notificacion_whatsapp
-import threading
+from django.utils import timezone
+from datetime import timedelta
+import json
 from .decorators import admin_requerido
 from core.decorators import modulo_requerido
+from django.contrib.auth import get_user_model
+from django.shortcuts import redirect
 
+
+Usuario = get_user_model()
+
+
+@login_required
+def asignar_tecnico(request, pk):
+    """HTMX: Asigna un mecánico a la orden de forma silenciosa"""
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+        tecnico_id = request.POST.get('tecnico_id')
+
+        if tecnico_id:
+            # Buscamos al mecánico asegurándonos que sea de la misma sucursal
+            tecnico = get_object_or_404(Usuario, id=tecnico_id, sucursal=request.user.sucursal)
+            orden.tecnico = tecnico
+        else:
+            # Si seleccionan "-- Sin asignar --"
+            orden.tecnico = None
+
+        orden.save()
+
+        # Devolvemos un 200 OK vacío. HTMX no reemplazará nada en la pantalla
+        return HttpResponse(status=200)
+
+    return HttpResponse(status=400)
 
 @login_required
 def tablero_kanban(request):
@@ -126,19 +154,16 @@ def buscar_bicicletas(request):
 
 
 @login_required
-def detalle_orden(request, pk):
-    """
-    Devuelve el fragmento HTML con el panel lateral de detalles de la orden.
-    """
-    # Buscamos la orden asegurándonos (regla de oro) de que pertenezca a la sucursal del usuario
-    orden = get_object_or_404(
-        OrdenTrabajo.objects.select_related('bicicleta__cliente', 'tecnico'),
-        id=pk,
-        sucursal=request.user.sucursal
-    )
+def detalle_orden(request, pk):  # O el nombre que tenga tu vista
+    orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
 
-    # Renderizamos SOLO el fragmento (sin el base.html)
-    return render(request, 'taller/partials/detalle_orden_slideover.html', {'orden': orden})
+    # NUEVO: Traemos a los mecánicos de esta sucursal
+    mecanicos = Usuario.objects.filter(rol='TECNICO', sucursal=request.user.sucursal)
+
+    return render(request, 'taller/partials/detalle_orden_slideover.html', {
+        'orden': orden,
+        'mecanicos': mecanicos  # <-- Asegúrate de mandar esta variable
+    })
 
 
 @login_required
@@ -314,28 +339,28 @@ def dashboard_inicio(request):
 def agenda_citas(request):
     """Muestra la agenda y permite crear nuevas citas"""
     sucursal = request.user.sucursal
+    tenant = request.user.tenant
     hoy = timezone.localdate()
 
     if request.method == 'POST':
-        form = CitaForm(request.POST)
+        form = CitaForm(request.POST, tenant=tenant, sucursal=sucursal)
         if form.is_valid():
             nueva_cita = form.save(commit=False)
             nueva_cita.sucursal = sucursal
             nueva_cita.save()
             return redirect('taller:agenda')
     else:
-        form = CitaForm(initial={'fecha': hoy})  # Por defecto selecciona hoy
+        form = CitaForm(initial={'fecha': hoy}, tenant=tenant, sucursal=sucursal)
 
     # Traemos las citas de HOY en adelante, que no estén canceladas
-    citas_proximas = Cita.objects.filter(
+    citas = Cita.objects.filter(
         sucursal=sucursal,
-        fecha__gte=hoy
-    ).exclude(estado='CANCELADA')
+        fecha=hoy
+    ).order_by('hora')
 
     return render(request, 'taller/agenda.html', {
         'form': form,
-        'citas_proximas': citas_proximas,
-        'hoy': hoy
+        'citas': citas
     })
 
 
@@ -483,3 +508,224 @@ def eliminar_cargo(request, cargo_id):
 
         return HttpResponse(html_lista + html_oob)
     return HttpResponse(status=400)
+
+
+@login_required
+@modulo_requerido('modulo_citas')
+def recibir_cita(request, pk):
+    """Convierte una Cita en Orden de Trabajo inteligente"""
+    if request.method == 'POST':
+        cita = get_object_or_404(Cita, id=pk, sucursal=request.user.sucursal)
+
+        if cita.estado != 'COMPLETADA':
+
+            # CASO 1: Cita de cliente recurrente (Tiene bicicleta vinculada)
+            if cita.bicicleta:
+                OrdenTrabajo.objects.create(
+                    sucursal=cita.sucursal,
+                    cliente=cita.bicicleta.cliente,
+                    bicicleta=cita.bicicleta,
+                    estado='RECIBIDA',
+                    notas_cliente=cita.asunto,  # Usamos el asunto como notas iniciales
+                )
+                cita.estado = 'ATENDIDA'
+                cita.save()
+
+                # Magia HTMX: Redirección directa al Kanban
+                response = HttpResponse(status=200)
+                response['HX-Redirect'] = reverse('taller:kanban')
+                return response
+
+            # CASO 2: Cita de cliente nuevo (No tiene bicicleta vinculada)
+            else:
+                cita.estado = 'ATENDIDA'
+                cita.save()
+
+                # Lo mandamos a registrar su bici, pero le pre-llenamos el nombre y teléfono
+                base_url = reverse('taller:nueva_orden')
+                parametros = urllib.parse.urlencode({
+                    'nombre': cita.nombre_cliente,
+                    'telefono': cita.telefono
+                })
+                url_final = f"{base_url}?{parametros}"
+
+                response = HttpResponse(status=200)
+                response['HX-Redirect'] = url_final
+                return response
+
+    return HttpResponse(status=400)
+
+
+@login_required
+def imprimir_ticket(request, pk):
+    """Genera una vista optimizada para impresoras térmicas (Punto de Venta)"""
+    # Nos aseguramos de que la orden pertenece a la sucursal del usuario
+    orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+
+    return render(request, 'taller/imprimir_ticket.html', {
+        'orden': orden
+    })
+
+
+@login_required
+def notificar_whatsapp(request, pk):
+    """Genera un enlace dinámico de WhatsApp según el estado de la orden"""
+    orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+    cliente = orden.cliente
+
+    # Limpiamos el teléfono (quitamos espacios o guiones si los hay)
+    telefono = cliente.telefono.replace(' ', '').replace('-', '')
+
+    # Opcional: Si tus clientes no guardan el código de país, puedes forzarlo aquí.
+    # if not telefono.startswith('+'):
+    #     telefono = f"+52{telefono}"
+
+    # 1. Analizamos el estado para redactar el mensaje
+    if orden.estado == 'RECIBIDA' or orden.estado == 'DIAGNOSTICO':
+        mensaje = (
+            f"¡Hola {cliente.nombre}! Te contactamos de *{orden.sucursal.nombre}* 🚲.\n\n"
+            f"El presupuesto estimado para tu {orden.bicicleta.marca} es de *${orden.total_orden}*.\n"
+            f"¿Nos autorizas a iniciar con el servicio?"
+        )
+    elif orden.estado == 'REPARADA':
+        mensaje = (
+            f"¡Excelentes noticias {cliente.nombre}! 🥳\n\n"
+            f"El servicio de tu {orden.bicicleta.marca} ya quedó listo. "
+            f"El saldo a liquidar es de *${orden.total_orden}*.\n\n"
+            f"Ya puedes pasar a recogerla a nuestro taller. ¡Te esperamos!"
+        )
+    else:
+        mensaje = (
+            f"¡Hola {cliente.nombre}! Te contactamos de *{orden.sucursal.nombre}* "
+            f"para darte seguimiento a la orden de tu bicicleta."
+        )
+
+    # 2. Codificamos el texto para que la URL sea válida
+    mensaje_codificado = urllib.parse.quote(mensaje)
+
+    # 3. Construimos el enlace oficial de WhatsApp (wa.me)
+    url_whatsapp = f"https://wa.me/{telefono}?text={mensaje_codificado}"
+
+    # Redirigimos al usuario hacia WhatsApp (Web o App)
+    return redirect(url_whatsapp)
+
+
+@login_required
+def avanzar_estado_orden(request, pk):
+    """HTMX: Mueve la orden a la siguiente columna lógica del Kanban"""
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+
+        # Diccionario de transiciones lógicas
+        # Formato: 'ESTADO_ACTUAL': 'SIGUIENTE_ESTADO'
+        transiciones = {
+            'RECIBIDA': 'DIAGNOSTICO',
+            'DIAGNOSTICO': 'EN_REPARACION',
+            'EN_REPARACION': 'REPARADA',
+            # Nota: No automatizamos el paso a ENTREGADA aquí porque
+            # eso requiere el proceso de cobro.
+        }
+
+        if orden.estado in transiciones:
+            orden.estado = transiciones[orden.estado]
+            orden.save()
+
+        # Magia HTMX: Redirigimos al Kanban para ver el cambio reflejado
+        response = HttpResponse(status=200)
+        response['HX-Redirect'] = reverse('taller:kanban')
+        return response
+
+    return HttpResponse(status=400)
+
+
+@login_required
+@admin_requerido
+def dashboard(request):
+    sucursal = request.user.sucursal
+    hoy = timezone.now().date()
+    inicio_mes = hoy.replace(day=1)
+    hace_una_semana = hoy - timedelta(days=7)  # Rango para la gráfica
+
+    bicis_en_taller = OrdenTrabajo.objects.filter(
+        sucursal=sucursal,
+        estado__in=['RECIBIDA', 'DIAGNOSTICO', 'EN_REPARACION']
+    ).count()
+
+    # 2. Citas Agendadas para Hoy
+    citas_hoy = Cita.objects.filter(
+        sucursal=sucursal,
+        fecha=hoy,
+        estado='PENDIENTE'
+    ).count()
+
+    # 3. Ingresos del Mes (Calculado directo desde la base de datos multiplicando cant * precio)
+    # Asumimos que los ingresos reales son de las bicis "REPARADAS" o entregadas.
+    ingresos_mes = CargoOrden.objects.filter(
+        orden__sucursal=sucursal,
+        orden__estado__in=['REPARADA'],  # O el estado final que manejes
+        created_at__date__gte=inicio_mes
+    ).aggregate(
+        total=Sum(F('cantidad') * F('precio'))
+    )['total'] or 0.00
+
+    # 4. NUEVO: Datos para la gráfica (Ingresos de los últimos 7 días)
+    # Agrupamos los cargos por fecha exacta y sumamos los totales
+    ingresos_diarios = CargoOrden.objects.filter(
+        orden__sucursal=sucursal,
+        orden__estado='REPARADA',  # Asegúrate de usar el estado correcto de "cobro"
+        created_at__date__gte=hace_una_semana
+    ).annotate(
+        fecha=TruncDate('created_at')
+    ).values('fecha').annotate(
+        total_dia=Sum(F('cantidad') * F('precio'))
+    ).order_by('fecha')
+
+    # Extraemos los datos en dos listas simples para inyectarlas en Chart.js
+    etiquetas = [ingreso['fecha'].strftime("%d %b") for ingreso in ingresos_diarios]
+    totales = [float(ingreso['total_dia'] or 0) for ingreso in ingresos_diarios]
+
+    context = {
+        'bicis_en_taller': bicis_en_taller,
+        'citas_hoy': citas_hoy,
+        'ingresos_mes': ingresos_mes,
+        'mes_actual': hoy.strftime("%B").capitalize(),
+
+        # Pasamos las listas al HTML convertidas en texto JSON seguro
+        'chart_labels': json.dumps(etiquetas),
+        'chart_data': json.dumps(totales),
+    }
+
+    #return render(request, 'taller/dashboard.html', context)
+    return render(request, 'taller/dashboard2.html', context)
+
+
+@login_required
+@admin_requerido
+def gestion_personal(request):
+    """CRUD para gestionar a los empleados de la sucursal"""
+    sucursal = request.user.sucursal
+    tenant = request.user.tenant
+
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST)
+        if form.is_valid():
+            # Pausamos el guardado para inyectar sucursal, tenant y encriptar contraseña
+            nuevo_empleado = form.save(commit=False)
+            nuevo_empleado.sucursal = sucursal
+            nuevo_empleado.tenant = tenant
+
+            # ¡Muy importante! Encriptar la contraseña antes de guardar
+            nuevo_empleado.password = make_password(form.cleaned_data['password'])
+            nuevo_empleado.save()
+
+            return redirect('taller:gestion_personal')
+    else:
+        form = EmpleadoForm()
+
+    # Traemos a todos los empleados de ESTA sucursal (excluyendo al superusuario global si existe)
+    empleados = Usuario.objects.filter(sucursal=sucursal).order_by('rol', 'first_name')
+
+    return render(request, 'taller/personal.html', {
+        'form': form,
+        'empleados': empleados
+    })

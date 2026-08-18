@@ -4,9 +4,19 @@
         {% for bici in resultados %}
             <!-- Usamos un poquito de JavaScript nativo para asignar los valores y cerrar la lista -->
             <li class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 transition"
-                onclick="
+               onclick="
                     document.getElementById('id_bicicleta').value = '{{ bici.id }}';
-                    document.getElementById('bici-search-input').value = '🚲 {{ bici.marca }} {{ bici.modelo }} (👤 {{ bici.cliente.nombre }})';
+
+                    let searchInput = document.getElementById('bici-search-input');
+                    if (searchInput) searchInput.value = '🚲 {{ bici.marca }} {{ bici.modelo }} (👤 {{ bici.cliente.nombre }})';
+
+                    /* NUEVO: Autocompletar datos si estamos en la Agenda */
+                    let nombreInput = document.getElementById('id_nombre_cliente');
+                    if (nombreInput) nombreInput.value = '{{ bici.cliente.nombre }}';
+
+                    let telefonoInput = document.getElementById('id_telefono');
+                    if (telefonoInput) telefonoInput.value = '{{ bici.cliente.telefono }}';
+
                     document.getElementById('search-results').innerHTML = '';
                 ">
                 <div class="flex flex-col">

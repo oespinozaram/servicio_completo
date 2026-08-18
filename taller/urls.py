@@ -18,6 +18,13 @@ urlpatterns = [
     path('orden/<int:pk>/cobrar/', views.cobrar_orden, name='cobrar_orden'),
     path('rastreo/<str:token>/', views.rastreo_publico, name='rastreo_publico'),
     path('agenda/', views.agenda_citas, name='agenda'),
+    path('cita/<int:pk>/recibir/', views.recibir_cita, name='recibir_cita'),
     path('agenda/<int:pk>/atendida/', views.marcar_cita_atendida, name='marcar_cita_atendida'),
+    path('orden/<int:pk>/asignar-tecnico/', views.asignar_tecnico, name='asignar_tecnico'),
     path('corte-caja/', views.corte_caja, name='corte_caja'),
+    path('orden/<int:pk>/imprimir/', views.imprimir_ticket, name='imprimir_ticket'),
+    path('orden/<int:pk>/whatsapp/', views.notificar_whatsapp, name='notificar_whatsapp'),
+    path('orden/<int:pk>/avanzar/', views.avanzar_estado_orden, name='avanzar_estado_orden'),
+    path('dashboard/', views.dashboard, name='dashboard2'),
+    path('personal/', views.gestion_personal, name='gestion_personal'),
 ]

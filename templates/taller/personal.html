@@ -1,0 +1,82 @@
+<!-- taller/templates/taller/personal.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Gestión del Personal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+
+    <!-- Columna Izquierda: Formulario de Alta -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">👤 Nuevo Empleado</h3>
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <div><label class="text-sm font-medium text-gray-700">Usuario (Para iniciar sesión)</label>{{ form.username }}</div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-sm font-medium text-gray-700">Nombre</label>{{ form.first_name }}</div>
+                    <div><label class="text-sm font-medium text-gray-700">Apellidos</label>{{ form.last_name }}</div>
+                </div>
+
+                <div><label class="text-sm font-medium text-gray-700">Correo Electrónico</label>{{ form.email }}</div>
+                <div><label class="text-sm font-medium text-gray-700">Rol del Sistema</label>{{ form.rol }}</div>
+
+                <div class="mt-2 border-t pt-4">
+                    <label class="text-sm font-medium text-gray-700">Contraseña Temporal</label>
+                    {{ form.password }}
+                    <p class="text-xs text-gray-500 mt-1">El empleado usará esta contraseña para su primer ingreso.</p>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition mt-4">
+                    Registrar Empleado
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Directorio del Equipo -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-4 mb-4">Directorio de la Sucursal</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for empleado in empleados %}
+                <div class="border border-gray-200 rounded-lg p-4 flex items-start hover:border-blue-300 transition-colors">
+
+                    <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl mr-4 shrink-0">
+                        {{ empleado.first_name|slice:":1"|default:empleado.username|slice:":1"|upper }}
+                    </div>
+
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-900">
+                            {{ empleado.first_name }} {{ empleado.last_name }}
+                        </h4>
+                        <p class="text-sm text-gray-500 mb-2">@{{ empleado.username }}</p>
+
+                        <span class="px-2 py-1 text-xs font-bold rounded-md uppercase tracking-wider
+                            {% if empleado.rol == 'ADMIN' %}bg-purple-100 text-purple-800
+                            {% elif empleado.rol == 'MECANICO' %}bg-orange-100 text-orange-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ empleado.get_rol_display|default:empleado.rol }}
+                        </span>
+                    </div>
+
+                    <!-- Indicador de ti mismo -->
+                    {% if empleado == request.user %}
+                        <span class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Tú</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="col-span-2 text-center py-8 text-gray-500">
+                    No hay empleados registrados en esta sucursal.
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

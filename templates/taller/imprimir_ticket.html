@@ -1,0 +1,125 @@
+<!-- taller/templates/taller/imprimir_ticket.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #{{ orden.id }} - {{ orden.bicicleta.cliente.nombre }}</title>
+    <style>
+        /* Reset de márgenes y tipografía de ticket */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #000;
+            margin: 0 auto;
+            padding: 10px;
+            width: 80mm; /* Ancho estándar de impresora térmica */
+            max-width: 100%;
+        }
+
+        /* Utilidades limpias */
+        h1, h2, h3, p { margin: 0; padding: 0; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .mb-1 { margin-bottom: 5px; }
+        .mb-2 { margin-bottom: 10px; }
+        .mb-4 { margin-bottom: 20px; }
+
+        /* Línea punteada divisoria */
+        .divider {
+            border-bottom: 1px dashed #000;
+            margin: 10px 0;
+        }
+
+        /* Tabla de cargos */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { text-align: left; padding: 3px 0; font-size: 11px; vertical-align: top; }
+        th { border-bottom: 1px solid #000; }
+
+        /* Ocultar elementos innecesarios al imprimir */
+        @media print {
+            @page { margin: 0; }
+            body { margin: 0; padding: 5mm; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado del Taller -->
+    <div class="text-center mb-2">
+        <h2 class="font-bold mb-1">{{ orden.sucursal.nombre|upper }}</h2>
+        <p>Ticket de Recepción</p>
+        <p>Fecha: {{ orden.created_at|date:"d/m/Y H:i" }}</p>
+        <p class="font-bold mt-1">ORDEN #{{ orden.id|stringformat:"05d" }}</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Datos del Cliente y Bicicleta -->
+    <div class="mb-2">
+        <p><span class="font-bold">Cliente:</span> {{ orden.cliente.nombre|truncatechars:25 }}</p>
+        <p><span class="font-bold">Tel:</span> {{ orden.cliente.telefono }}</p>
+        <p><span class="font-bold">Bicicleta:</span> {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Detalle de Conceptos -->
+    <p class="font-bold text-center">SERVICIOS INICIALES</p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Cant</th>
+                <th style="width: 55%;">Descripción</th>
+                <th style="width: 30%; text-align: right;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cargo in orden.cargos.all %}
+            <tr>
+                <td class="text-center">{{ cargo.cantidad }}</td>
+                <td>{{ cargo.descripcion }}</td>
+                <td class="text-right">${{ cargo.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center" style="padding: 15px 0;">
+                    <em>(Recepción para diagnóstico)</em>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- Totales -->
+    <div class="text-right mb-4">
+        <h3 class="font-bold">TOTAL EST: ${{ orden.total_orden|floatformat:2 }}</h3>
+    </div>
+
+    <!-- Firmas y Legales -->
+    <div class="text-center" style="margin-top: 30px;">
+        <p style="font-size: 10px; margin-bottom: 20px;">Acepto los términos de revisión y me comprometo a recoger mi equipo en un plazo máximo de 30 días.</p>
+
+        <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto 5px auto;"></div>
+        <p class="font-bold" style="font-size: 11px;">Firma del Cliente</p>
+    </div>
+
+    <!-- Botón Manual (Por si bloquean el popup) -->
+    <div class="no-print text-center" style="margin-top: 40px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Imprimir de Nuevo</button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; margin-left: 10px;">Cerrar Pestaña</button>
+    </div>
+
+    <!-- ¡MAGIA DE IMPRESIÓN AUTOMÁTICA! -->
+    <script>
+        window.onload = function() {
+            // Lanza el cuadro de diálogo de la impresora apenas carga la página
+            window.print();
+        }
+    </script>
+
+</body>
+</html>

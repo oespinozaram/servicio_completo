@@ -1,0 +1,121 @@
+<!-- taller/templates/taller/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Panel de Control - {{ request.user.sucursal.nombre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto mt-6">
+
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800">Resumen Operativo</h2>
+        <p class="text-gray-500">Métricas principales al día de hoy.</p>
+    </div>
+
+    <!-- Grid de Tarjetas KPI -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        <!-- Tarjeta 1: Carga de Trabajo -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition">
+            <div class="p-4 bg-blue-100 rounded-lg text-blue-600 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Bicis en Taller</p>
+                <h3 class="text-3xl font-black text-gray-800">{{ bicis_en_taller }}</h3>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Agenda -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition">
+            <div class="p-4 bg-yellow-100 rounded-lg text-yellow-600 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Citas Hoy</p>
+                <h3 class="text-3xl font-black text-gray-800">{{ citas_hoy }}</h3>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3: Finanzas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition">
+            <div class="p-4 bg-green-100 rounded-lg text-green-600 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Ingresos {{ mes_actual }}</p>
+                <h3 class="text-3xl font-black text-gray-800">${{ ingresos_mes|floatformat:2 }}</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Gráfica de Rendimiento -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Ingresos de los últimos 7 días</h3>
+
+        <!-- El lienzo donde Chart.js dibujará la gráfica -->
+        <div class="relative h-72 w-full">
+            <canvas id="ingresosChart"></canvas>
+        </div>
+    </div>
+
+</div>
+<!-- Importar Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Script para inicializar la gráfica -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('ingresosChart').getContext('2d');
+
+        // Django inyecta los datos JSON aquí de forma segura
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ingresos Diarios ($)',
+                    data: data,
+                    borderColor: '#2563eb', /* Color azul Tailwind blue-600 */
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3 /* Curva suave en las líneas */
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false } // Ocultamos la leyenda para que se vea más limpio
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [4, 4] },
+                        ticks: {
+                            callback: function(value) { return '$' + value; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -96,7 +96,9 @@ class Cita(models.Model):
     asunto = models.CharField(max_length=150, help_text="Ej. Mantenimiento general, cambio de llantas...")
     fecha = models.DateField()
     hora = models.TimeField()
+    bicicleta = models.ForeignKey('clientes.Bicicleta', on_delete=models.SET_NULL, null=True, blank=True, help_text="Vincular si ya es cliente recurrente")
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    notas = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
