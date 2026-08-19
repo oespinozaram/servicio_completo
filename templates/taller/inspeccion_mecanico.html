@@ -1,0 +1,75 @@
+<!-- taller/templates/taller/inspeccion_mecanico.html -->
+{% extends 'base.html' %} <!-- Asumiendo que tu base respeta layouts móviles -->
+
+{% block header_title %}Modo Inspección{% endblock %}
+
+{% block content %}
+<!-- Forzamos un ancho máximo de celular (max-w-md) para mantener el formato vertical -->
+<div class="max-w-md mx-auto bg-white min-h-[80vh] shadow-xl rounded-t-3xl overflow-hidden mt-4 border border-gray-200">
+
+    <!-- Encabezado Fijo con el Contexto -->
+    <div class="bg-blue-600 text-white p-5">
+        <div class="flex justify-between items-start mb-2">
+            <span class="bg-blue-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Orden #{{ orden.id }}</span>
+            <a href="{% url 'taller:kanban' %}" class="text-white hover:text-blue-200">✕ Cerrar</a>
+        </div>
+        <h2 class="text-2xl font-black">{{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</h2>
+        <p class="text-blue-100 mt-1">👤 {{ orden.cliente.nombre }}</p>
+    </div>
+
+    <!-- Contenido Scrollable -->
+    <div class="p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📋 Registrar Hallazgo</h3>
+
+        <!-- Formulario Premium de Evidencias (Apuntando a la vista que ya hicimos) -->
+        <form action="{% url 'taller:agregar_cargo_evidencia' orden.id %}" method="POST" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Servicio Extra o Refacción</label>
+                <input type="text" name="descripcion" required class="w-full text-lg rounded-lg border-gray-300 p-3 border focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="Ej. Balero central roto">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Precio ($)</label>
+                    <input type="number" step="0.01" name="precio" required class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Cantidad</label>
+                    <input type="number" name="cantidad" value="1" min="1" required class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
+                </div>
+            </div>
+
+            <!-- Botón gigante para la cámara -->
+            <div class="mt-4 p-4 border-2 border-dashed border-gray-300 rounded-xl text-center bg-gray-50 hover:bg-gray-100 transition">
+                <label class="cursor-pointer block">
+                    <span class="text-4xl block mb-2">📸</span>
+                    <span class="font-bold text-blue-600">Tomar Foto de Evidencia</span>
+                    <input type="file" name="evidencia_foto" accept="image/*" class="hidden" required>
+                </label>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Justificación Técnica</label>
+                <textarea name="evidencia_nota" rows="3" required class="w-full text-md rounded-lg border-gray-300 p-3 border bg-gray-50" placeholder="Explícale al cliente por qué debe cambiar esta pieza..."></textarea>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mt-4">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="requiere_aprobacion" class="mt-1 w-5 h-5 text-yellow-600 rounded" checked>
+                    <div>
+                        <span class="font-bold text-yellow-800 block">Solicitar Autorización</span>
+                        <span class="text-xs text-yellow-700">Pausa la orden y notifica al cliente para que apruebe el cargo.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Aquí usamos un POST normal (sin HTMX) para redireccionar de vuelta al Kanban de forma segura tras subir la imagen -->
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition mt-6">
+                Guardar Hallazgo
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

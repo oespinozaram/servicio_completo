@@ -141,6 +141,15 @@
                                 {% include 'taller/partials/lista_cargos.html' %}
                             </div>
 
+                            <div class="mt-6 mb-6">
+                                <a href="{% url 'taller:inspeccion_mecanico' orden.id %}"
+                                   class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-3">
+                                    <span class="text-xl">📱</span>
+                                    Abrir Modo Inspección (Mecánico)
+                                </a>
+                                <p class="text-xs text-center text-gray-500 mt-2">Registra hallazgos, toma fotos y solicita aprobaciones desde tu celular.</p>
+                            </div>
+
                             <!-- Buscador para añadir nuevos cargos -->
                             <div class="mt-4 relative" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
                                 <input type="text"

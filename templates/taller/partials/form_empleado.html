@@ -1,0 +1,42 @@
+<!-- taller/templates/taller/partials/form_empleado.html -->
+
+<h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
+    {% if empleado %}✏️ Editar Empleado{% else %}👤 Nuevo Empleado{% endif %}
+</h3>
+
+<!-- Si hay empleado, mandamos POST a editar_empleado. Si no, mandamos al POST tradicional -->
+<form {% if empleado %}hx-post="{% url 'taller:editar_empleado' empleado.id %}"{% else %}method="POST"{% endif %}
+      class="space-y-4">
+    {% csrf_token %}
+
+    <div><label class="text-sm font-medium text-gray-700">Usuario</label>{{ form.username }}</div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <div><label class="text-sm font-medium text-gray-700">Nombre</label>{{ form.first_name }}</div>
+        <div><label class="text-sm font-medium text-gray-700">Apellidos</label>{{ form.last_name }}</div>
+    </div>
+
+    <div><label class="text-sm font-medium text-gray-700">Correo Electrónico</label>{{ form.email }}</div>
+    <div><label class="text-sm font-medium text-gray-700">Rol del Sistema</label>{{ form.rol }}</div>
+
+    <div class="mt-2 border-t pt-4">
+        <label class="text-sm font-medium text-gray-700">Contraseña</label>
+        {{ form.password }}
+        <p class="text-xs text-gray-500 mt-1">
+            {% if empleado %}Déjalo en blanco si no deseas cambiarla.{% else %}Contraseña temporal para el primer ingreso.{% endif %}
+        </p>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+            {% if empleado %}Guardar Cambios{% else %}Registrar Empleado{% endif %}
+        </button>
+
+        {% if empleado %}
+        <!-- Botón para cancelar la edición y volver al formulario de registro limpio -->
+        <a href="{% url 'taller:gestion_personal' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition text-center">
+            Cancelar
+        </a>
+        {% endif %}
+    </div>
+</form>

@@ -6,34 +6,11 @@
 {% block content %}
 <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
-    <!-- Columna Izquierda: Formulario de Alta -->
+    <!-- Columna Izquierda: Contenedor Dinámico del Formulario -->
     <div class="lg:col-span-1">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-            <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">👤 Nuevo Empleado</h3>
-
-            <form method="POST" class="space-y-4">
-                {% csrf_token %}
-
-                <div><label class="text-sm font-medium text-gray-700">Usuario (Para iniciar sesión)</label>{{ form.username }}</div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-sm font-medium text-gray-700">Nombre</label>{{ form.first_name }}</div>
-                    <div><label class="text-sm font-medium text-gray-700">Apellidos</label>{{ form.last_name }}</div>
-                </div>
-
-                <div><label class="text-sm font-medium text-gray-700">Correo Electrónico</label>{{ form.email }}</div>
-                <div><label class="text-sm font-medium text-gray-700">Rol del Sistema</label>{{ form.rol }}</div>
-
-                <div class="mt-2 border-t pt-4">
-                    <label class="text-sm font-medium text-gray-700">Contraseña Temporal</label>
-                    {{ form.password }}
-                    <p class="text-xs text-gray-500 mt-1">El empleado usará esta contraseña para su primer ingreso.</p>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition mt-4">
-                    Registrar Empleado
-                </button>
-            </form>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6" id="form-container">
+            <!-- Aquí cargamos el partial que acabamos de crear -->
+            {% include 'taller/partials/form_empleado.html' %}
         </div>
     </div>
 
@@ -42,21 +19,25 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-bold text-gray-800 border-b pb-4 mb-4">Directorio de la Sucursal</h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
                 {% for empleado in empleados %}
-                <div class="border border-gray-200 rounded-lg p-4 flex items-start hover:border-blue-300 transition-colors">
+                <!-- Si está inactivo, le bajamos la opacidad para que se vea "desactivado" -->
+                <div class="border border-gray-200 rounded-lg p-4 flex items-center hover:border-blue-300 transition-colors {% if not empleado.is_active %}opacity-50 bg-gray-50{% endif %}">
 
-                    <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl mr-4 shrink-0">
+                    <div class="h-12 w-12 rounded-full {% if empleado.is_active %}bg-blue-100 text-blue-700{% else %}bg-gray-200 text-gray-500{% endif %} flex items-center justify-center font-bold text-xl mr-4 shrink-0">
                         {{ empleado.first_name|slice:":1"|default:empleado.username|slice:":1"|upper }}
                     </div>
 
                     <div class="flex-1">
-                        <h4 class="font-bold text-gray-900">
+                        <h4 class="font-bold text-gray-900 flex items-center gap-2">
                             {{ empleado.first_name }} {{ empleado.last_name }}
+                            {% if not empleado.is_active %}
+                                <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase">Inactivo</span>
+                            {% endif %}
                         </h4>
-                        <p class="text-sm text-gray-500 mb-2">@{{ empleado.username }}</p>
+                        <p class="text-sm text-gray-500 mb-1">@{{ empleado.username }}</p>
 
-                        <span class="px-2 py-1 text-xs font-bold rounded-md uppercase tracking-wider
+                        <span class="px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider
                             {% if empleado.rol == 'ADMIN' %}bg-purple-100 text-purple-800
                             {% elif empleado.rol == 'MECANICO' %}bg-orange-100 text-orange-800
                             {% else %}bg-green-100 text-green-800{% endif %}">
@@ -64,18 +45,31 @@
                         </span>
                     </div>
 
-                    <!-- Indicador de ti mismo -->
-                    {% if empleado == request.user %}
-                        <span class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Tú</span>
-                    {% endif %}
-                </div>
-                {% empty %}
-                <div class="col-span-2 text-center py-8 text-gray-500">
-                    No hay empleados registrados en esta sucursal.
+                    <!-- Acciones (Botones) -->
+                    <div class="flex flex-col gap-2 shrink-0">
+                        <!-- Botón Editar (Carga el form en la columna izquierda usando hx-get) -->
+                        <button hx-get="{% url 'taller:editar_empleado' empleado.id %}"
+                                hx-target="#form-container"
+                                class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-1.5 px-3 rounded transition cursor-pointer text-center">
+                            Editar
+                        </button>
+
+                        <!-- Evitamos que el usuario activo se desactive a sí mismo -->
+                        {% if empleado != request.user %}
+                        <button hx-post="{% url 'taller:toggle_estado_empleado' empleado.id %}"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                class="text-xs font-bold py-1.5 px-3 rounded transition cursor-pointer text-center
+                                {% if empleado.is_active %}bg-red-50 hover:bg-red-100 text-red-600{% else %}bg-green-50 hover:bg-green-100 text-green-600{% endif %}">
+                            {% if empleado.is_active %}Desactivar{% else %}Reactivar{% endif %}
+                        </button>
+                        {% else %}
+                        <span class="text-xs font-bold text-gray-400 py-1.5 px-3 text-center cursor-not-allowed">Eres tú</span>
+                        {% endif %}
+                    </div>
+
                 </div>
                 {% endfor %}
             </div>
-
         </div>
     </div>
 </div>

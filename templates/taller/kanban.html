@@ -5,12 +5,11 @@
     <a href="{% url 'taller:nueva_orden' %}" class="ml-4 text-sm bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-4 rounded-md shadow transition">
         + Nueva Recepción
     </a>
-
 {% endblock %}
 
 {% block content %}
-    <!-- Grid de 4 columnas para el Kanban -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 h-full items-start">
+    <!-- CORRECCIÓN 1: Cambiamos a xl:grid-cols-5 para que quepan las 5 columnas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 h-full items-start">
     
         <!-- COLUMNA 1: RECIBIDAS -->
         <div class="bg-gray-100 rounded-lg p-4 shadow-sm border-t-4 border-gray-400 min-h-[500px]">
@@ -41,8 +40,25 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- COLUMNA 3 (NUEVA): ESPERANDO APROBACIÓN -->
+        <!-- CORRECCIÓN 2: Estilos unificados y color naranja -->
+        <div class="bg-orange-50 rounded-lg p-4 shadow-sm border-t-4 border-orange-400 min-h-[500px]">
+            <h3 class="font-bold text-orange-800 mb-4 flex justify-between">
+                ⏳ Pausadas
+                <span class="bg-orange-200 text-orange-800 px-2 py-1 rounded text-xs">{{ ordenes_esperando.count|default:ordenes_esperando|length }}</span>
+            </h3>
+            <div class="space-y-4">
+                {% for orden in ordenes_esperando %}
+                    <!-- CORRECCIÓN 3: Reutilizar tu partial de tarjeta -->
+                    {% include 'taller/partials/tarjeta_orden.html' with orden=orden color="orange" %}
+                {% empty %}
+                    <p class="text-sm text-orange-400 text-center italic">No hay pausas</p>
+                {% endfor %}
+            </div>
+        </div>
     
-        <!-- COLUMNA 3: EN REPARACIÓN -->
+        <!-- COLUMNA 4: EN REPARACIÓN -->
         <div class="bg-yellow-50 rounded-lg p-4 shadow-sm border-t-4 border-yellow-400 min-h-[500px]">
             <h3 class="font-bold text-yellow-800 mb-4 flex justify-between">
                 🔧 En Reparación
@@ -57,10 +73,10 @@
             </div>
         </div>
     
-        <!-- COLUMNA 4: LISTAS (POR RECOGER) -->
+        <!-- COLUMNA 5: LISTAS (POR RECOGER) -->
         <div class="bg-green-50 rounded-lg p-4 shadow-sm border-t-4 border-green-400 min-h-[500px]">
             <h3 class="font-bold text-green-800 mb-4 flex justify-between">
-                ✅ Listas / Por Pagar
+                ✅ Listas
                 <span class="bg-green-200 text-green-800 px-2 py-1 rounded text-xs">{{ ordenes_listas.count }}</span>
             </h3>
             <div class="space-y-4">

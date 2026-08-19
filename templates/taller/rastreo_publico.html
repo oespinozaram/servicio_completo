@@ -4,96 +4,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rastreo de Bicicleta - {{ orden.sucursal.tenant.nombre }}</title>
+    <title>Rastreo de Servicio | {{ orden.sucursal.nombre }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen flex flex-col">
+<body class="bg-gray-50 font-sans antialiased text-gray-900 selection:bg-blue-200">
 
-    <!-- Encabezado del Taller -->
-    <header class="bg-gray-900 text-white p-6 shadow-md text-center">
-        <h1 class="text-2xl font-bold tracking-widest text-blue-400">{{ orden.sucursal.tenant.nombre|upper }}</h1>
-        <p class="text-sm text-gray-400 mt-1">📍 Sucursal: {{ orden.sucursal.nombre }}</p>
-    </header>
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg relative pb-20">
 
-    <!-- Contenedor Principal (Mobile First) -->
-    <main class="flex-1 w-full max-w-md mx-auto p-4 mt-4">
-        
-        <!-- Tarjeta de la Bicicleta -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-1">
-                🚲 {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}
-            </h2>
-            <!-- Privacidad: Solo mostramos el primer nombre del cliente como cortesía -->
-            <p class="text-sm text-gray-500">
-                Hola, <span class="font-semibold text-gray-700">{{ orden.bicicleta.cliente.nombre|truncatewords:1 }}</span>. Aquí está el estado de tu bici.
-            </p>
-            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Orden de Trabajo</span>
-                <span class="font-bold text-gray-800">#{{ orden.id }}</span>
-            </div>
+        <!-- Header del Taller -->
+        <div class="bg-gray-900 text-white p-6 text-center rounded-b-3xl shadow-md">
+            <h1 class="text-2xl font-black tracking-tight">{{ orden.sucursal.tenant.nombre|upper }}</h1>
+
+            <!-- Y aquí bajamos la sucursal a un subtítulo -->
+            <p class="text-gray-300 text-sm mt-1">Sucursal: {{ orden.sucursal.nombre }}</p>
+            <p class="text-gray-300 text-sm mt-1">Rastreo de Servicio en Línea</p>
         </div>
 
-        <!-- Tarjeta del Estado Actual -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 text-center">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Estado del Servicio</h3>
-            
-            {% if orden.estado == 'RECIBIDA' %}
-                <div class="inline-block p-4 rounded-full bg-gray-100 mb-3">
-                    <span class="text-4xl">📥</span>
+        <div class="p-6 mt-2">
+            <!-- Tarjeta de la Bici -->
+            <div class="bg-blue-50 rounded-2xl p-5 mb-8 border border-blue-100 shadow-sm flex items-center">
+                <div class="h-14 w-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm mr-4 shrink-0">
+                    🚲
                 </div>
-                <h4 class="text-xl font-bold text-gray-800">En Fila</h4>
-                <p class="text-sm text-gray-500 mt-2">Hemos recibido tu bicicleta de forma segura y pronto un mecánico la evaluará.</p>
-                
-            {% elif orden.estado == 'DIAGNOSTICO' %}
-                <div class="inline-block p-4 rounded-full bg-blue-100 mb-3">
-                    <span class="text-4xl">🔍</span>
+                <div>
+                    <p class="text-xs text-blue-500 font-bold uppercase tracking-wider mb-1">Orden #{{ orden.id|stringformat:"05d" }}</p>
+                    <h2 class="text-lg font-black text-gray-800 leading-tight">{{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</h2>
+                    <p class="text-sm text-gray-600 font-medium">Cliente: {{ orden.cliente.nombre|truncatechars:20 }}</p>
                 </div>
-                <h4 class="text-xl font-bold text-blue-800">En Revisión</h4>
-                <p class="text-sm text-gray-500 mt-2">Nuestro equipo está evaluando tu bicicleta para armar el presupuesto.</p>
-                
-            {% elif orden.estado == 'REPARACION' %}
-                <div class="inline-block p-4 rounded-full bg-yellow-100 mb-3">
-                    <span class="text-4xl">🔧</span>
+            </div>
+
+            <!-- MÓDULO PREMIUM: APROBACIÓN DE EVIDENCIAS -->
+            {% if orden.estado == 'ESPERANDO_APROBACION' %}
+            <div class="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 mb-8 shadow-md relative overflow-hidden">
+
+                <!-- Decoración de fondo -->
+                <div class="absolute -right-4 -top-4 text-yellow-100 opacity-50" style="font-size: 8rem;">⚠️</div>
+
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl animate-bounce">⚠️</span>
+                        <h3 class="text-xl font-black text-yellow-800 leading-tight">Se requiere tu autorización</h3>
+                    </div>
+                    <p class="text-sm text-yellow-700 mb-4 font-medium">Durante la revisión, nuestro mecánico encontró un detalle importante que necesita tu aprobación antes de continuar con el servicio.</p>
+
+                    <!-- Listamos los cargos pausados y su evidencia -->
+                    {% for cargo in orden.cargos.all %}
+                        {% if cargo.estado_aprobacion == 'PENDIENTE' %}
+                        <div class="bg-white rounded-xl p-4 shadow-sm border border-yellow-200 mb-4">
+                            <h4 class="font-bold text-gray-900 text-lg">{{ cargo.descripcion }}</h4>
+                            <p class="text-xl font-black text-gray-800 mt-1">Costo extra: ${{ cargo.subtotal|floatformat:2 }}</p>
+
+                            {% if cargo.evidencia_foto %}
+                            <div class="mt-4 mb-2">
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">📸 Evidencia Fotográfica</p>
+                                <a href="{{ cargo.evidencia_foto.url }}" target="_blank">
+                                    <img src="{{ cargo.evidencia_foto.url }}" alt="Evidencia" class="rounded-lg max-h-48 w-full object-cover border border-gray-200 shadow-sm">
+                                </a>
+                            </div>
+                            {% endif %}
+
+                            {% if cargo.evidencia_nota %}
+                            <p class="text-sm text-gray-700 mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+                                "{{ cargo.evidencia_nota }}"
+                            </p>
+                            {% endif %}
+
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- Botones de Acción -->
+                    <div class="flex flex-col gap-3 mt-6">
+                        <!-- Botón Aprobar -->
+                        <form action="{% url 'taller:responder_aprobacion' orden.id 'aprobar' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black text-lg py-4 px-4 rounded-xl shadow transition flex justify-center items-center gap-2">
+                                ✅ Aprobar y Continuar
+                            </button>
+                        </form>
+
+                        <!-- Botón Rechazar -->
+                        <form action="{% url 'taller:responder_aprobacion' orden.id 'rechazar' %}" method="POST" onsubmit="return confirm('Si rechazas este cambio, el mecánico continuará sin repararlo. ¿Estás seguro?');">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 font-bold py-3 px-4 rounded-xl transition">
+                                ❌ No, continuar sin esto
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <h4 class="text-xl font-bold text-yellow-700">En Reparación</h4>
-                <p class="text-sm text-gray-500 mt-2">¡Manos a la obra! Tu bicicleta está siendo reparada en este momento.</p>
-                
-            {% elif orden.estado == 'LISTA' %}
-                <div class="inline-block p-4 rounded-full bg-green-100 mb-3">
-                    <span class="text-4xl">✅</span>
-                </div>
-                <h4 class="text-xl font-bold text-green-700">¡Lista para rodar!</h4>
-                <p class="text-sm text-gray-500 mt-2">El servicio ha concluido. Puedes pasar a recogerla en tu sucursal.</p>
-                
-            {% elif orden.estado == 'ENTREGADA' %}
-                <div class="inline-block p-4 rounded-full bg-gray-100 mb-3">
-                    <span class="text-4xl">🏁</span>
-                </div>
-                <h4 class="text-xl font-bold text-gray-700">Entregada</h4>
-                <p class="text-sm text-gray-500 mt-2">Esta bicicleta ya fue entregada. ¡Gracias por confiar en nosotros!</p>
+            </div>
             {% endif %}
-        </div>
 
-        <!-- Presupuesto / Total a Pagar -->
-        {% if orden.estado == 'LISTA' or orden.estado == 'ENTREGADA' %}
-        <div class="bg-white rounded-xl shadow-sm border border-green-200 p-6 mb-6">
-            <h3 class="text-xs font-semibold text-green-600 uppercase tracking-wider mb-2">Total del Servicio</h3>
-            <div class="flex justify-between items-end">
-                <span class="text-3xl font-bold text-gray-900">${{ orden.total_orden }}</span>
-                {% if orden.pagada %}
-                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">PAGADA</span>
-                {% else %}
-                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-bold">POR PAGAR</span>
-                {% endif %}
+            <h3 class="text-lg font-bold text-gray-800 mb-6">Estado Actual</h3>
+
+            <!-- Barra de Progreso y Stepper Vertical -->
+            <div class="relative pl-4">
+                <!-- Línea vertical de fondo -->
+                <div class="absolute left-6 top-2 bottom-6 w-0.5 bg-gray-200"></div>
+
+                <!-- Línea vertical animada (El progreso real) -->
+                <div class="absolute left-6 top-2 w-0.5 bg-blue-500 transition-all duration-1000 ease-out" style="height: {{ progreso }}%;"></div>
+
+                <!-- Paso 1: Recibida -->
+                <div class="relative flex items-start mb-8 group">
+                    <div class="h-5 w-5 rounded-full border-4 border-white {% if progreso >= 25 %}bg-blue-500 shadow-blue-300 shadow-md{% else %}bg-gray-300{% endif %} z-10 shrink-0 mt-1 transition-colors"></div>
+                    <div class="ml-4">
+                        <h4 class="font-bold {% if progreso >= 25 %}text-gray-900{% else %}text-gray-400{% endif %}">Ingreso al Taller</h4>
+                        <p class="text-sm text-gray-500 mt-1">Bicicleta recibida en sucursal.</p>
+                        {% if progreso == 25 %}<span class="inline-block mt-2 text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Estamos en este paso</span>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Paso 2: Diagnóstico -->
+                <div class="relative flex items-start mb-8 group">
+                    <div class="h-5 w-5 rounded-full border-4 border-white {% if progreso >= 50 %}bg-blue-500 shadow-blue-300 shadow-md{% else %}bg-gray-300{% endif %} z-10 shrink-0 mt-1 transition-colors"></div>
+                    <div class="ml-4">
+                        <h4 class="font-bold {% if progreso >= 50 %}text-gray-900{% else %}text-gray-400{% endif %}">Diagnóstico y Presupuesto</h4>
+                        <p class="text-sm text-gray-500 mt-1">El mecánico evalúa los componentes.</p>
+                        {% if progreso == 50 %}<span class="inline-block mt-2 text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Esperando tu aprobación</span>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Paso 3: Reparación -->
+                <div class="relative flex items-start mb-8 group">
+                    <div class="h-5 w-5 rounded-full border-4 border-white {% if progreso >= 75 %}bg-blue-500 shadow-blue-300 shadow-md{% else %}bg-gray-300{% endif %} z-10 shrink-0 mt-1 transition-colors"></div>
+                    <div class="ml-4">
+                        <h4 class="font-bold {% if progreso >= 75 %}text-gray-900{% else %}text-gray-400{% endif %}">En Reparación</h4>
+                        <p class="text-sm text-gray-500 mt-1">Manos a la obra. Estamos trabajando.</p>
+                        {% if progreso == 75 %}<span class="inline-block mt-2 text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Mecánico trabajando</span>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Paso 4: Lista -->
+                <div class="relative flex items-start group">
+                    <div class="h-5 w-5 rounded-full border-4 border-white {% if progreso == 100 %}bg-green-500 shadow-green-300 shadow-md{% else %}bg-gray-300{% endif %} z-10 shrink-0 mt-1 transition-colors"></div>
+                    <div class="ml-4">
+                        <h4 class="font-bold {% if progreso == 100 %}text-green-600 text-xl{% else %}text-gray-400{% endif %}">¡Lista para Entregar!</h4>
+                        <p class="text-sm text-gray-500 mt-1">Tu bicicleta quedó como nueva.</p>
+
+                        {% if progreso == 100 %}
+                        <div class="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p class="text-sm text-gray-800 mb-2">Total a pagar en mostrador:</p>
+                            <p class="text-2xl font-black text-green-700">${{ orden.total_orden|floatformat:2 }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+
+            <div class="mt-12 text-center">
+                <a href="https://wa.me/{{ orden.sucursal.telefono }}" target="_blank" class="text-blue-600 font-bold hover:underline">
+                    ¿Dudas? Contáctanos por WhatsApp
+                </a>
+            </div>
+
         </div>
-        {% endif %}
-
-    </main>
-
-    <footer class="text-center py-6 text-xs text-gray-400">
-        <p>Potenciado por <strong>Taller Pro SaaS</strong></p>
-    </footer>
-
+    </div>
 </body>
 </html>

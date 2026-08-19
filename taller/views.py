@@ -69,6 +69,7 @@ def tablero_kanban(request):
         'ordenes_recibidas': ordenes_base.filter(estado='RECIBIDA'),
         'ordenes_diagnostico': ordenes_base.filter(estado='DIAGNOSTICO'),
         'ordenes_reparacion': ordenes_base.filter(estado='REPARACION'),
+        'ordenes_esperando': ordenes_base.filter(estado='ESPERANDO_APROBACION'),
         'ordenes_listas': ordenes_base.filter(estado='LISTA'),
     }
 
@@ -281,11 +282,21 @@ def rastreo_publico(request, token):
     # select_related optimiza la consulta trayendo la bici, cliente y sucursal de un solo golpe
     orden = get_object_or_404(
         OrdenTrabajo.objects.select_related('bicicleta__cliente', 'sucursal__tenant'),
-        token_publico=token
-    )
+        token_publico=token)
+
+    progreso = {
+        'RECIBIDA': 25,
+        'DIAGNOSTICO': 50,
+        'REPARACION': 75,
+        'REPARADA': 100,
+        'ENTREGADA': 100
+    }.get(orden.estado, 0)
 
     # Renderizamos una plantilla específica para el cliente, sin los menús del taller
-    return render(request, 'taller/rastreo_publico.html', {'orden': orden})
+    return render(request, 'taller/rastreo_publico.html', {
+        'orden': orden,
+        'progreso': progreso
+    })
 
 
 @login_required
@@ -382,7 +393,7 @@ def marcar_cita_atendida(request, pk):
             'telefono': cita.telefono
         })
 
-        # 3. Unimos todo: /taller/nueva-orden/?nombre=Juan&telefono=5551234
+        # 3. Unimos: /taller/nueva-orden/?nombre=Juan&telefono=5551234
         url_final = f"{base_url}?{parametros}"
 
         response = HttpResponse()
@@ -573,19 +584,20 @@ def notificar_whatsapp(request, pk):
     orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
     cliente = orden.cliente
 
+    nombre_empresa = orden.sucursal.tenant.nombre
+    nombre_sucursal = orden.sucursal.nombre
+
     # Limpiamos el teléfono (quitamos espacios o guiones si los hay)
     telefono = cliente.telefono.replace(' ', '').replace('-', '')
 
-    # Opcional: Si tus clientes no guardan el código de país, puedes forzarlo aquí.
-    # if not telefono.startswith('+'):
-    #     telefono = f"+52{telefono}"
+    url_rastreo = request.build_absolute_uri(reverse('taller:rastreo_publico', args=[orden.id]))
 
-    # 1. Analizamos el estado para redactar el mensaje
     if orden.estado == 'RECIBIDA' or orden.estado == 'DIAGNOSTICO':
         mensaje = (
-            f"¡Hola {cliente.nombre}! Te contactamos de *{orden.sucursal.nombre}* 🚲.\n\n"
+            f"¡Hola {cliente.nombre}! Te contactamos de *{nombre_empresa}* (Suc. {nombre_sucursal}) 🚲.\n\n"
             f"El presupuesto estimado para tu {orden.bicicleta.marca} es de *${orden.total_orden}*.\n"
-            f"¿Nos autorizas a iniciar con el servicio?"
+            f"¿Nos autorizas a iniciar?\n\n"
+            f"📍 Sigue el estatus de tu reparación aquí en tiempo real:\n{url_rastreo}"
         )
     elif orden.estado == 'REPARADA':
         mensaje = (
@@ -729,3 +741,129 @@ def gestion_personal(request):
         'form': form,
         'empleados': empleados
     })
+
+
+@login_required
+@admin_requerido
+def editar_empleado(request, pk):
+    """HTMX: Carga el formulario de edición y procesa los cambios"""
+    empleado = get_object_or_404(Usuario, id=pk, sucursal=request.user.sucursal)
+
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST, instance=empleado)
+        form.fields['password'].required = False  # La contraseña es opcional al editar
+
+        if form.is_valid():
+            empleado_guardado = form.save(commit=False)
+            nueva_password = form.cleaned_data.get('password')
+            if nueva_password:
+                empleado_guardado.password = make_password(nueva_password)
+            empleado_guardado.save()
+
+            # Recargamos la pantalla completa para ver la lista actualizada
+            response = HttpResponse(status=200)
+            response['HX-Redirect'] = reverse('taller:gestion_personal')
+            return response
+    else:
+        form = EmpleadoForm(instance=empleado)
+        form.fields['password'].required = False
+
+    # Devolvemos solo el HTML del formulario para inyectarlo en la columna izquierda
+    return render(request, 'taller/partials/form_empleado.html', {'form': form, 'empleado': empleado})
+
+
+@login_required
+@admin_requerido
+def toggle_estado_empleado(request, pk):
+    """HTMX: Baja o Alta Lógica de un empleado"""
+    if request.method == 'POST':
+        empleado = get_object_or_404(Usuario, id=pk, sucursal=request.user.sucursal)
+
+        # Seguridad: El administrador no puede desactivarse a sí mismo por error
+        if empleado != request.user:
+            empleado.is_active = not empleado.is_active
+            empleado.save()
+
+        response = HttpResponse(status=200)
+        response['HX-Redirect'] = reverse('taller:gestion_personal')
+        return response
+
+    return HttpResponse(status=400)
+
+
+@login_required
+def agregar_cargo_evidencia(request, pk):
+    """HTMX: Agrega un cargo extra, sube la foto y pausa la orden si requiere aprobación"""
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+
+        # 1. Capturamos los datos del formulario
+        descripcion = request.POST.get('descripcion')
+        precio = request.POST.get('precio')
+        cantidad = request.POST.get('cantidad', 1)
+
+        # 2. Capturamos los campos Premium
+        requiere_aprobacion = request.POST.get('requiere_aprobacion') == 'on'
+        evidencia_nota = request.POST.get('evidencia_nota')
+        evidencia_foto = request.FILES.get('evidencia_foto')  # ¡Ojo aquí! Usamos request.FILES
+
+        # 3. Creamos el registro en la base de datos
+        nuevo_cargo = CargoOrden.objects.create(
+            orden=orden,
+            descripcion=descripcion,
+            precio=precio,
+            cantidad=cantidad,
+            requiere_aprobacion=requiere_aprobacion,
+            evidencia_nota=evidencia_nota,
+            evidencia_foto=evidencia_foto,
+            estado_aprobacion='PENDIENTE' if requiere_aprobacion else 'APROBADO'
+        )
+
+        # 4. Magia de la Máquina de Estados
+        if requiere_aprobacion:
+            orden.estado = 'ESPERANDO_APROBACION'
+            orden.save()
+            # Si se pausa el trabajo, cerramos el panel y recargamos el Kanban
+            return redirect('taller:kanban')
+
+        # Si no requiere aprobación, solo recargamos la lista de cargos en el panel
+        # (Asegúrate de tener una URL/vista que devuelva solo el HTML de los cargos)
+        return redirect('taller:kanban')
+
+    return HttpResponse(status=400)
+
+
+@login_required
+def inspeccion_mecanico(request, pk):
+    """Pantalla vertical dedicada para que el mecánico registre hallazgos"""
+    orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+
+    return render(request, 'taller/inspeccion_mecanico.html', {
+        'orden': orden
+    })
+
+
+def responder_aprobacion(request, orden_id, accion):
+    """Procesa la decisión del cliente sobre el presupuesto extra"""
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenTrabajo, id=orden_id)
+
+        # Buscamos todos los cargos de esta orden que están en pausa
+        cargos_pendientes = CargoOrden.objects.filter(orden=orden, estado_aprobacion='PENDIENTE')
+
+        if accion == 'aprobar':
+            # Marcamos los cargos como aceptados
+            cargos_pendientes.update(estado_aprobacion='APROBADO')
+        elif accion == 'rechazar':
+            # Marcamos los cargos como rechazados (no sumarán al total)
+            cargos_pendientes.update(estado_aprobacion='RECHAZADO')
+
+        # Magia: Movemos la tarjeta de vuelta a la fila de los mecánicos
+        orden.estado = 'REPARACION'
+        orden.save()
+
+        # Redirigimos al cliente de vuelta a su página de rastreo para que vea el nuevo avance
+        # NOTA: Cambia 'pk' por el nombre de parámetro que uses en tu URL original (ej. 'uuid')
+        return redirect('taller:rastreo_publico', pk=orden.id)
+
+    return HttpResponse(status=400)

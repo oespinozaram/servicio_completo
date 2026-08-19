@@ -12,11 +12,13 @@ def generar_token_publico():
 
 class OrdenTrabajo(models.Model):
     STATUS_CHOICES = [
-        ('RECIBIDA', 'Recibida'),
+        ('RECIBIDA', 'Recibida (En fila)'),
         ('DIAGNOSTICO', 'En Diagnóstico'),
+        ('ESPERANDO_APROBACION', 'Esperando Aprobación'), # NUEVO: Pausa operativa
         ('REPARACION', 'En Reparación'),
-        ('LISTA', 'Lista para Entrega'),
-        ('ENTREGADA', 'Entregada'),
+        ('REPARADA', 'Reparada (Lista para entrega)'),
+        ('ENTREGADA', 'Entregada / Cobrada'),
+        ('CANCELADA', 'Cancelada / Devuelta sin reparar'), # NUEVO: Válvula de escape
     ]
     sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
@@ -24,7 +26,7 @@ class OrdenTrabajo(models.Model):
     tecnico = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                 limit_choices_to={'rol': 'TECNICO'})
 
-    estado = models.CharField(max_length=15, choices=STATUS_CHOICES, default='RECIBIDA')
+    estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default='RECIBIDA')
     notas_cliente = models.TextField(blank=True, help_text="Problema reportado por el cliente")
     notas_internas = models.TextField(blank=True, help_text="Notas privadas del mecánico")
 
@@ -112,6 +114,20 @@ class CargoOrden(models.Model):
     # Relación: A qué orden pertenece este renglón.
     # El related_name='cargos' nos permitirá hacer cosas como: orden.cargos.all()
     orden = models.ForeignKey(OrdenTrabajo, on_delete=models.CASCADE, related_name='cargos')
+    requiere_aprobacion = models.BooleanField(default=False,
+                                              help_text="Marcar si es un hallazgo nuevo durante el diagnóstico")
+
+    ESTADO_APROBACION_CHOICES = [
+        ('PENDIENTE', 'Pendiente de respuesta'),
+        ('APROBADO', 'Aprobado por el cliente'),
+        ('RECHAZADO', 'Rechazado por el cliente'),
+    ]
+    estado_aprobacion = models.CharField(max_length=15, choices=ESTADO_APROBACION_CHOICES, default='PENDIENTE')
+
+    # 3. La evidencia visual y justificación
+    evidencia_foto = models.ImageField(upload_to='evidencias_taller/', null=True, blank=True)
+    evidencia_nota = models.TextField(null=True, blank=True,
+                                      help_text="Ej. El balero presenta fisuras graves que comprometen la seguridad.")
 
     # Descripción del cargo (ej. "Lavado General", "Cadena Shimano")
     descripcion = models.CharField(max_length=200)
