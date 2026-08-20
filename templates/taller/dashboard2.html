@@ -56,6 +56,81 @@
 
     </div>
 
+    <!-- SECCIÓN DE RANKINGS Y DESEMPEÑO -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Tabla: Top Servicios y Refacciones -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 p-4">
+                <h3 class="text-lg font-bold text-gray-800">🛒 Top Movimientos del Mes</h3>
+                <p class="text-xs text-gray-500">Servicios y refacciones más populares.</p>
+            </div>
+            <div class="p-0">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-white text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="p-4 font-semibold border-b border-gray-100">Descripción</th>
+                            <th class="p-4 font-semibold border-b border-gray-100 text-center">Cant.</th>
+                            <th class="p-4 font-semibold border-b border-gray-100 text-right">Ingresos</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for servicio in top_servicios %}
+                        <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                            <td class="p-4 text-gray-800 font-medium">{{ servicio.descripcion }}</td>
+                            <td class="p-4 text-center text-gray-600">
+                                <span class="bg-blue-100 text-blue-800 py-1 px-2 rounded-md font-bold text-xs">
+                                    {{ servicio.cantidad_vendida }}
+                                </span>
+                            </td>
+                            <td class="p-4 text-right text-green-600 font-bold">
+                                ${{ servicio.ingreso_generado|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="p-8 text-center text-gray-400 italic">No hay ventas registradas este mes.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tabla: Desempeño de Mecánicos -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 p-4">
+                <h3 class="text-lg font-bold text-gray-800">🏆 Rendimiento del Personal</h3>
+                <p class="text-xs text-gray-500">Bicicletas terminadas en el mes actual.</p>
+            </div>
+            <div class="p-4">
+                <ul class="space-y-4">
+                    {% for mecanico in top_mecanicos %}
+                    <li class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg shadow-sm hover:border-blue-200 transition">
+                        <div class="flex items-center gap-3">
+                            <!-- Avatar con la inicial -->
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-lg shadow-inner">
+                                {{ mecanico.tecnico__first_name|default:mecanico.tecnico__username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">{{ mecanico.tecnico__first_name|default:mecanico.tecnico__username }} {{ mecanico.tecnico__last_name }}</p>
+                                <p class="text-xs text-gray-500">Mecánico</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-black text-blue-600">{{ mecanico.total_ordenes }}</p>
+                            <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Órdenes</p>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-center py-8 text-gray-400 italic">Sin datos de rendimiento este mes.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
     <!-- Gráfica de Rendimiento -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Ingresos de los últimos 7 días</h3>

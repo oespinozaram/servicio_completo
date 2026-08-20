@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
-from django.db.models.functions import TruncDate
+from django.db.models import Sum, Count, F, Q
+from django.db.models.functions import TruncMonth
 from .forms import OrdenTrabajoForm, CitaForm
-from django.db.models import Q, F
 from clientes.models import Bicicleta
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
@@ -11,7 +11,6 @@ from inventario.models import ServicioCatalogo, ItemInventario
 from .models import DetalleOrdenServicio, DetalleOrdenPieza, Pago, Cita, CargoOrden, OrdenTrabajo
 from .forms import EmpleadoForm
 from django.db import transaction
-from django.db.models import Sum
 from django.urls import reverse
 import urllib.parse
 from django.utils import timezone
@@ -658,63 +657,77 @@ def avanzar_estado_orden(request, pk):
 
 
 @login_required
-@admin_requerido
 def dashboard(request):
+    """Vista principal de métricas y analítica del taller"""
     sucursal = request.user.sucursal
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
-    hace_una_semana = hoy - timedelta(days=7)  # Rango para la gráfica
 
+    # 1. MÉTRICAS GENERALES (Las tarjetas superiores)
     bicis_en_taller = OrdenTrabajo.objects.filter(
         sucursal=sucursal,
-        estado__in=['RECIBIDA', 'DIAGNOSTICO', 'EN_REPARACION']
+        estado__in=['RECIBIDA', 'DIAGNOSTICO', 'ESPERANDO_APROBACION', 'REPARACION']
     ).count()
 
-    # 2. Citas Agendadas para Hoy
     citas_hoy = Cita.objects.filter(
-        sucursal=sucursal,
-        fecha=hoy,
-        estado='PENDIENTE'
+        sucursal=sucursal, fecha=hoy, estado='PENDIENTE'
     ).count()
 
-    # 3. Ingresos del Mes (Calculado directo desde la base de datos multiplicando cant * precio)
-    # Asumimos que los ingresos reales son de las bicis "REPARADAS" o entregadas.
     ingresos_mes = CargoOrden.objects.filter(
         orden__sucursal=sucursal,
-        orden__estado__in=['REPARADA'],  # O el estado final que manejes
+        orden__estado__in=['REPARADA', 'ENTREGADA'],
+        estado_aprobacion='APROBADO', # Excluimos los rechazados
         created_at__date__gte=inicio_mes
-    ).aggregate(
-        total=Sum(F('cantidad') * F('precio'))
-    )['total'] or 0.00
+    ).aggregate(total=Sum(F('cantidad') * F('precio')))['total'] or 0.00
 
-    # 4. NUEVO: Datos para la gráfica (Ingresos de los últimos 7 días)
-    # Agrupamos los cargos por fecha exacta y sumamos los totales
-    ingresos_diarios = CargoOrden.objects.filter(
+    # 2. TOP MECÁNICOS DEL MES (Productividad)
+    # Asumiendo que OrdenTrabajo tiene un campo ForeignKey 'mecanico'
+    top_mecanicos = OrdenTrabajo.objects.filter(
+        sucursal=sucursal,
+        estado__in=['REPARADA', 'ENTREGADA'],
+        created_at__date__gte=inicio_mes
+    ).values('tecnico__username', 'tecnico__first_name', 'tecnico__last_name').annotate(
+        total_ordenes=Count('id')
+    ).order_by('-total_ordenes')[:5]
+
+    # 3. TOP SERVICIOS Y REFACCIONES (Lo que más se vende)
+    top_servicios = CargoOrden.objects.filter(
         orden__sucursal=sucursal,
-        orden__estado='REPARADA',  # Asegúrate de usar el estado correcto de "cobro"
-        created_at__date__gte=hace_una_semana
-    ).annotate(
-        fecha=TruncDate('created_at')
-    ).values('fecha').annotate(
-        total_dia=Sum(F('cantidad') * F('precio'))
-    ).order_by('fecha')
+        orden__estado__in=['REPARADA', 'ENTREGADA'],
+        estado_aprobacion='APROBADO',
+        created_at__date__gte=inicio_mes
+    ).values('descripcion').annotate(
+        cantidad_vendida=Sum('cantidad'),
+        ingreso_generado=Sum(F('cantidad') * F('precio'))
+    ).order_by('-cantidad_vendida')[:5]
 
-    # Extraemos los datos en dos listas simples para inyectarlas en Chart.js
-    etiquetas = [ingreso['fecha'].strftime("%d %b") for ingreso in ingresos_diarios]
-    totales = [float(ingreso['total_dia'] or 0) for ingreso in ingresos_diarios]
+    # 4. TENDENCIA DE VENTAS (Gráfica de los últimos 6 meses)
+    hace_6_meses = hoy - timedelta(days=180)
+    tendencia_mensual = CargoOrden.objects.filter(
+        orden__sucursal=sucursal,
+        orden__estado__in=['REPARADA', 'ENTREGADA'],
+        estado_aprobacion='APROBADO',
+        created_at__date__gte=hace_6_meses
+    ).annotate(
+        mes=TruncMonth('created_at')
+    ).values('mes').annotate(
+        total=Sum(F('cantidad') * F('precio'))
+    ).order_by('mes')
+
+    meses_labels = [v['mes'].strftime("%b %Y").capitalize() for v in tendencia_mensual]
+    meses_totales = [float(v['total'] or 0) for v in tendencia_mensual]
 
     context = {
         'bicis_en_taller': bicis_en_taller,
         'citas_hoy': citas_hoy,
         'ingresos_mes': ingresos_mes,
         'mes_actual': hoy.strftime("%B").capitalize(),
-
-        # Pasamos las listas al HTML convertidas en texto JSON seguro
-        'chart_labels': json.dumps(etiquetas),
-        'chart_data': json.dumps(totales),
+        'top_mecanicos': top_mecanicos,
+        'top_servicios': top_servicios,
+        'chart_labels': json.dumps(meses_labels),
+        'chart_data': json.dumps(meses_totales),
     }
 
-    #return render(request, 'taller/dashboard.html', context)
     return render(request, 'taller/dashboard2.html', context)
 
 
