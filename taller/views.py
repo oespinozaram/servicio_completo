@@ -282,7 +282,7 @@ def rastreo_publico(request, token):
     # select_related optimiza la consulta trayendo la bici, cliente y sucursal de un solo golpe
     orden = get_object_or_404(
         OrdenTrabajo.objects.select_related('bicicleta__cliente', 'sucursal__tenant'),
-        token_publico=token)
+        uuid_publico=token)
 
     progreso = {
         'RECIBIDA': 25,
@@ -586,30 +586,37 @@ def notificar_whatsapp(request, pk):
 
     nombre_empresa = orden.sucursal.tenant.nombre
     nombre_sucursal = orden.sucursal.nombre
+    estado_display = orden.get_estado_display()
 
     # Limpiamos el teléfono (quitamos espacios o guiones si los hay)
     telefono = cliente.telefono.replace(' ', '').replace('-', '')
 
-    url_rastreo = request.build_absolute_uri(reverse('taller:rastreo_publico', args=[orden.id]))
+    url_rastreo = request.build_absolute_uri(reverse('taller:rastreo_publico', kwargs={'token': orden.uuid_publico}))
 
     if orden.estado == 'RECIBIDA' or orden.estado == 'DIAGNOSTICO':
         mensaje = (
-            f"¡Hola {cliente.nombre}! Te contactamos de *{nombre_empresa}* (Suc. {nombre_sucursal}) 🚲.\n\n"
-            f"El presupuesto estimado para tu {orden.bicicleta.marca} es de *${orden.total_orden}*.\n"
+            f"¡Hola {cliente.nombre}! Te contactamos de {nombre_empresa} (Suc. {nombre_sucursal}) 🚲.\n\n"
+            f"El presupuesto estimado para tu {orden.bicicleta.marca} es de ${orden.total_orden}.\n"
             f"¿Nos autorizas a iniciar?\n\n"
-            f"📍 Sigue el estatus de tu reparación aquí en tiempo real:\n{url_rastreo}"
+            f"📍 Sigue el estatus y el detalle aquí:\n{url_rastreo}"
+        )
+    elif orden.estado == 'ESPERANDO_APROBACION':
+        mensaje = (
+            f"¡Hola {cliente.nombre}! Te contactamos de {nombre_empresa} (Suc. {nombre_sucursal}) ⚠️.\n\n"
+            f"Durante la revisión, nuestro mecánico encontró un detalle que requiere tu autorización.\n\n"
+            f"📍 Revisa la evidencia fotográfica y aprueba el cambio aquí:\n{url_rastreo}"
         )
     elif orden.estado == 'REPARADA':
         mensaje = (
             f"¡Excelentes noticias {cliente.nombre}! 🥳\n\n"
-            f"El servicio de tu {orden.bicicleta.marca} ya quedó listo. "
-            f"El saldo a liquidar es de *${orden.total_orden}*.\n\n"
-            f"Ya puedes pasar a recogerla a nuestro taller. ¡Te esperamos!"
+            f"El servicio de tu {orden.bicicleta.marca} ya quedó listo en {nombre_empresa} (Suc. {nombre_sucursal}). El saldo a liquidar es de ${orden.total_orden}.\n\n"
+            f"📍 Ya puedes pasar a recogerla. Mira el detalle final aquí:\n{url_rastreo}"
         )
     else:
         mensaje = (
-            f"¡Hola {cliente.nombre}! Te contactamos de *{orden.sucursal.nombre}* "
-            f"para darte seguimiento a la orden de tu bicicleta."
+            f"¡Hola {cliente.nombre}! Te contactamos de {nombre_empresa} (Suc. {nombre_sucursal}) 🚲.\n\n"
+            f"El estatus actual de tu bicicleta es: {estado_display}.\n\n"
+            f"📍 Sigue el avance en tiempo real aquí:\n{url_rastreo}"
         )
 
     # 2. Codificamos el texto para que la URL sea válida
@@ -843,10 +850,10 @@ def inspeccion_mecanico(request, pk):
     })
 
 
-def responder_aprobacion(request, orden_id, accion):
+def responder_aprobacion(request, token, accion):
     """Procesa la decisión del cliente sobre el presupuesto extra"""
     if request.method == 'POST':
-        orden = get_object_or_404(OrdenTrabajo, id=orden_id)
+        orden = get_object_or_404(OrdenTrabajo, uuid_publico=token)
 
         # Buscamos todos los cargos de esta orden que están en pausa
         cargos_pendientes = CargoOrden.objects.filter(orden=orden, estado_aprobacion='PENDIENTE')
@@ -864,6 +871,6 @@ def responder_aprobacion(request, orden_id, accion):
 
         # Redirigimos al cliente de vuelta a su página de rastreo para que vea el nuevo avance
         # NOTA: Cambia 'pk' por el nombre de parámetro que uses en tu URL original (ej. 'uuid')
-        return redirect('taller:rastreo_publico', pk=orden.id)
+        return redirect('taller:rastreo_publico', token=orden.uuid_publico)
 
     return HttpResponse(status=400)

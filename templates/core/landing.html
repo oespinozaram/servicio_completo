@@ -1,0 +1,81 @@
+<!-- core/templates/core/landing.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software para Talleres de Bicicletas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900 antialiased selection:bg-blue-200">
+
+    <!-- Navegación Superior -->
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="text-2xl font-black text-blue-600 tracking-tighter">
+            Servicio<span class="text-gray-900">Completo</span>
+        </div>
+        <div>
+            <!-- Cambia 'login' por el nombre real de tu ruta de inicio de sesión -->
+            <a href="{% url 'login' %}" class="font-bold text-gray-600 hover:text-blue-600 mr-6 transition">Iniciar Sesión</a>
+            <a href="#contacto" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition">
+                Solicitar Demo
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="container mx-auto px-6 py-16 md:py-24 flex flex-col md:flex-row items-center">
+
+        <div class="md:w-1/2 md:pr-12">
+            <span class="text-blue-600 font-bold tracking-wider uppercase text-sm mb-2 block">El Software Definitivo</span>
+            <h1 class="text-4xl md:text-6xl font-black leading-tight mb-6 text-gray-900">
+                Control total de tu <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">taller de bicicletas</span>
+            </h1>
+            <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                Olvídate de los cuadernos y los post-its. Gestiona recepciones, inventario, autorizaciones por WhatsApp y cobros desde un solo panel diseñado para mecánicos.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <!-- Cambia 'login' por tu ruta real de registro/login -->
+                <a href="{% url 'login' %}" class="bg-gray-900 hover:bg-black text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg transition text-center">
+                    Entrar al Sistema
+                </a>
+            </div>
+        </div>
+
+        <!-- Imagen/Mockup (Puedes poner un pantallazo de tu Kanban aquí) -->
+        <div class="md:w-1/2 mt-12 md:mt-0 relative">
+            <div class="absolute inset-0 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+            <div class="bg-white border border-gray-200 shadow-2xl rounded-2xl p-2 relative z-10 overflow-hidden transform rotate-2 hover:rotate-0 transition duration-500">
+                <!-- Reemplaza con un screenshot real de tu app -->
+                <div class="bg-gray-100 h-64 md:h-96 rounded-xl flex items-center justify-center border border-gray-200">
+                    <span class="text-6xl">📊</span>
+                    <p class="text-gray-400 font-bold ml-4">Captura de tu Kanban</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sección de Beneficios Rápidos -->
+    <section class="bg-white py-16 border-t border-gray-100">
+        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                <div class="text-4xl mb-4">📱</div>
+                <h3 class="text-xl font-bold mb-2">Rastreo para Clientes</h3>
+                <p class="text-gray-600">Elimina las llamadas. Tus clientes podrán ver el estatus de su bicicleta en tiempo real desde su celular.</p>
+            </div>
+            <div class="p-6 bg-yellow-50 rounded-2xl border border-yellow-100">
+                <div class="text-4xl mb-4">📸</div>
+                <h3 class="text-xl font-bold mb-2">Aprobación de Evidencias</h3>
+                <p class="text-gray-600">Sube fotos de refacciones dañadas y obtén la autorización del cliente con un solo clic.</p>
+            </div>
+            <div class="p-6 bg-green-50 rounded-2xl border border-green-100">
+                <div class="text-4xl mb-4">💰</div>
+                <h3 class="text-xl font-bold mb-2">Finanzas Claras</h3>
+                <p class="text-gray-600">Mide el rendimiento de tus mecánicos y los ingresos de tu taller con un dashboard automático.</p>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

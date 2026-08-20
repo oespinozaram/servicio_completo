@@ -19,8 +19,10 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from core import views as core_views
 
 urlpatterns = [
+    path('', core_views.landing_page, name='landing_page'),
     path('admin/', admin.site.urls),
     path('taller/', include('taller.urls')),
     path('clientes/', include('clientes.urls')),

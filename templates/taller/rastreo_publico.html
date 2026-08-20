@@ -76,7 +76,7 @@
                     <!-- Botones de Acción -->
                     <div class="flex flex-col gap-3 mt-6">
                         <!-- Botón Aprobar -->
-                        <form action="{% url 'taller:responder_aprobacion' orden.id 'aprobar' %}" method="POST">
+                        <form action="{% url 'taller:responder_aprobacion' orden.uuid_publico 'aprobar' %}" method="POST">
                             {% csrf_token %}
                             <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black text-lg py-4 px-4 rounded-xl shadow transition flex justify-center items-center gap-2">
                                 ✅ Aprobar y Continuar
@@ -84,7 +84,7 @@
                         </form>
 
                         <!-- Botón Rechazar -->
-                        <form action="{% url 'taller:responder_aprobacion' orden.id 'rechazar' %}" method="POST" onsubmit="return confirm('Si rechazas este cambio, el mecánico continuará sin repararlo. ¿Estás seguro?');">
+                        <form action="{% url 'taller:responder_aprobacion' orden.uuid_publico 'rechazar' %}" method="POST" onsubmit="return confirm('Si rechazas este cambio, el mecánico continuará sin repararlo. ¿Estás seguro?');">
                             {% csrf_token %}
                             <button type="submit" class="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 font-bold py-3 px-4 rounded-xl transition">
                                 ❌ No, continuar sin esto

@@ -4,6 +4,7 @@ from core.models import Sucursal, User
 from clientes.models import Cliente, Bicicleta
 from inventario.models import ServicioCatalogo, ItemInventario
 import secrets
+import uuid
 
 
 def generar_token_publico():
@@ -31,6 +32,7 @@ class OrdenTrabajo(models.Model):
     notas_internas = models.TextField(blank=True, help_text="Notas privadas del mecánico")
 
     token_publico = models.CharField(max_length=64, unique=True, default=generar_token_publico)
+    uuid_publico = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     pagada = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
