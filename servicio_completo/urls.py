@@ -23,6 +23,7 @@ from core import views as core_views
 
 urlpatterns = [
     path('', core_views.landing_page, name='landing_page'),
+    path('login/', core_views.LoginInteligenteView.as_view(), name='login'),
     path('admin/', admin.site.urls),
     path('taller/', include('taller.urls')),
     path('clientes/', include('clientes.urls')),

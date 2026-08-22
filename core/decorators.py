@@ -26,3 +26,26 @@ def modulo_requerido(nombre_modulo):
         return _wrapped_view
 
     return decorator
+
+
+def roles_permitidos(*roles_requeridos):
+    """
+    Bloquea el acceso a la vista si el usuario no tiene uno de los roles indicados.
+    Ejemplo: @roles_permitidos('ADMIN', 'CAJERO')
+    """
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            # Si el rol del usuario está en la lista de permitidos, adelante.
+            if request.user.is_authenticated and request.user.rol in roles_requeridos:
+                return view_func(request, *args, **kwargs)
+
+            # Si es un técnico intentando ver finanzas, lo rebotamos.
+            raise PermissionDenied(
+                "Tu perfil no tiene autorización para acceder a esta sección."
+            )
+
+        return _wrapped_view
+
+    return decorator

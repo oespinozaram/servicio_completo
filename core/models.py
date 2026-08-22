@@ -12,6 +12,9 @@ class Tenant(models.Model):
     modulo_citas = models.BooleanField(default=False, help_text="¿Paga el módulo de agenda/citas?")
     modulo_inventario_avanzado = models.BooleanField(default=False, help_text="¿Paga control de stock y proveedores?")
     modulo_facturacion = models.BooleanField(default=False, help_text="¿Paga facturación electrónica?")
+    modulo_retencion = models.BooleanField(default=False, help_text="CRM de recompras automáticas")
+    modulo_garantias = models.BooleanField(default=False, help_text="Detección automática de garantías")
+    modulo_punto_venta = models.BooleanField(default=False, help_text="Acceso a la app de escritorio")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -25,6 +28,8 @@ class Sucursal(models.Model):
     nombre = models.CharField(max_length=100)
     direccion = models.TextField()
     telefono = models.CharField(max_length=20, blank=True)
+    dias_garantia_servicio = models.IntegerField(default=30)
+    dias_para_recordatorio = models.IntegerField(default=180)
     activa = models.BooleanField(default=True)
 
     def __str__(self):

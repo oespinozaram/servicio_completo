@@ -9,4 +9,6 @@ urlpatterns = [
     path('servicios/', views.lista_servicios, name='lista_servicios'),
     path('servicios/<int:pk>/precio/', views.actualizar_precio_servicio, name='actualizar_precio_servicio'),
     path('buscar-global/', views.buscar_inventario_global, name='buscar_global'),
+    path('proveedores/', views.gestion_proveedores, name='proveedores'),
+    path('compras/', views.lista_compras, name='lista_compras'),
 ]

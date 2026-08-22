@@ -35,6 +35,17 @@ class OrdenTrabajo(models.Model):
     uuid_publico = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     pagada = models.BooleanField(default=False)
 
+    es_posible_garantia = models.BooleanField(
+        default=False,
+        help_text="El sistema lo marca en True si la bici tuvo un servicio reciente."
+    )
+    # === MÓDULO PREMIUM: RETENCIÓN ===
+    fecha_proximo_servicio = models.DateField(
+        null=True, blank=True,
+        help_text="Fecha calculada para el siguiente mantenimiento."
+    )
+    recordatorio_enviado = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

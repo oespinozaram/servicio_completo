@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, F
 from django.http import HttpResponse
 from .models import ItemInventario, ServicioCatalogo
 from .forms import ItemInventarioForm, ServicioCatalogoForm
+from core.decorators import roles_permitidos
+from .models import Proveedor
 
 
 @login_required
@@ -107,3 +109,39 @@ def buscar_inventario_global(request):
     # Si el input está vacío, devolvemos nada para que el menú flotante desaparezca
     return HttpResponse('')
 
+
+@login_required
+@roles_permitidos('ADMIN')
+def gestion_proveedores(request):
+    """Vista sencilla para listar y agregar proveedores"""
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        dias_visita = request.POST.get('dias_visita')
+        telefono = request.POST.get('telefono')
+
+        Proveedor.objects.create(
+            sucursal=request.user.sucursal,
+            nombre=nombre,
+            dias_visita=dias_visita,
+            telefono=telefono
+        )
+        return redirect('inventario:proveedores')
+
+    proveedores = Proveedor.objects.filter(sucursal=request.user.sucursal, activo=True)
+    return render(request, 'inventario/proveedores.html', {'proveedores': proveedores})
+
+
+@login_required
+@roles_permitidos('ADMIN')
+def lista_compras(request):
+    """Genera la lista de faltantes automáticamente"""
+
+    # ¡OJO AQUÍ! Cambia "Producto" y "stock_actual" por los nombres exactos que usas en tu modelo
+    faltantes = ItemInventario.objects.filter(
+        sucursal=request.user.sucursal,
+        stock__lte=F('stock_minimo')  # Filtra donde el stock sea menor o igual al mínimo
+    ).select_related('proveedor_principal').order_by('proveedor_principal__nombre', 'nombre')
+
+    return render(request, 'inventario/lista_compras.html', {
+        'faltantes': faltantes
+    })

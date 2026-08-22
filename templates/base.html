@@ -41,6 +41,34 @@
                         📋 Taller
                     </a>
                 </li>
+
+                {% if request.user.tenant.modulo_retencion %}
+                <li>
+                    <a href="{% url 'taller:panel_retencion' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        🔁 Retención (CRM)
+                    </a>
+                </li>
+                {% else %}
+                    <!-- TARJETA BLOQUEADA (Plan Básico) -> Upselling -->
+                    <div class="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-6 relative overflow-hidden flex flex-col justify-center items-center text-center opacity-80">
+                        <div class="absolute inset-0 bg-gray-100/50 backdrop-blur-[2px] z-10 flex flex-col justify-center items-center">
+                            <span class="text-3xl mb-2">🔒</span>
+                            <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                Función Premium
+                            </span>
+                        </div>
+
+                        <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Retención CRM</p>
+                        <p class="text-xs text-gray-500 max-w-[180px]">Genera recompras automáticas contactando a clientes por WhatsApp.</p>
+                    </div>
+                {% endif %}
+
+
+                <li>
+                    <a href="{% url 'clientes:directorio' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                        👥 Clientes (CRM)
+                    </a>
+                </li>
                 {% if request.user.tenant.modulo_citas %}
                     <li>
                         <a href="{% url 'taller:agenda' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
@@ -55,11 +83,7 @@
                         </a>
                     </li>
                 {% endif %}
-                <li>
-                    <a href="{% url 'clientes:directorio' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
-                        👥 Clientes (CRM)
-                    </a>
-                </li>
+
                 <li>
                     <a href="{% url 'inventario:lista_servicios' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
                         🛠️ Catálogo de Servicios

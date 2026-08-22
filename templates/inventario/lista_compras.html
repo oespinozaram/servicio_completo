@@ -1,0 +1,76 @@
+<!-- inventario/templates/inventario/lista_compras.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Lista de Compras (Faltantes){% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-6">
+
+    <div class="flex justify-between items-center mb-6">
+        <p class="text-gray-600">Productos que han alcanzado su punto de reorden.</p>
+        <button onclick="window.print()" class="bg-gray-900 hover:bg-black text-white font-bold py-2 px-6 rounded shadow transition flex items-center gap-2">
+            🖨️ Imprimir Reporte
+        </button>
+    </div>
+
+    <!-- Magia de Django: Agrupamos los faltantes por el nombre del proveedor -->
+    {% regroup faltantes by proveedor_principal as lista_por_proveedor %}
+
+    <div class="space-y-8">
+        {% for grupo in lista_por_proveedor %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+            <!-- Encabezado del Proveedor -->
+            <div class="bg-blue-50 border-b border-blue-100 p-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-black text-blue-900">
+                        📦 {{ grupo.grouper|default:"Sin Proveedor Asignado" }}
+                    </h3>
+                    {% if grupo.grouper %}
+                        <p class="text-sm text-blue-700 mt-1">
+                            Días de visita: <span class="font-bold">{{ grupo.list.0.proveedor_principal.dias_visita|default:"No especificado" }}</span>
+                        </p>
+                    {% endif %}
+                </div>
+                <span class="bg-blue-200 text-blue-800 font-bold px-3 py-1 rounded-full text-sm">
+                    {{ grupo.list|length }} artículos
+                </span>
+            </div>
+
+            <!-- Lista de Faltantes de ESTE proveedor -->
+            <div class="p-0">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                            <th class="p-4 font-semibold border-b border-gray-100">Producto / Refacción</th>
+                            <th class="p-4 font-semibold border-b border-gray-100 text-center">Stock Mínimo</th>
+                            <th class="p-4 font-semibold border-b border-gray-100 text-center text-red-600">Stock Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for producto in grupo.list %}
+                        <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                            <td class="p-4 font-bold text-gray-800">{{ producto.nombre }}</td>
+                            <td class="p-4 text-center text-gray-500">{{ producto.stock_minimo }}</td>
+                            <td class="p-4 text-center">
+                                <span class="bg-red-100 text-red-700 font-black py-1 px-3 rounded text-sm">
+                                    {{ producto.stock }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-green-50 border-2 border-dashed border-green-200 rounded-xl p-12 text-center">
+            <span class="text-6xl block mb-4">🎉</span>
+            <h3 class="text-2xl font-black text-green-800">¡Inventario Sano!</h3>
+            <p class="text-green-700 mt-2">Ningún producto está por debajo de su stock mínimo.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

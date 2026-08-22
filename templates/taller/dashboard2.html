@@ -54,6 +54,26 @@
             </div>
         </div>
 
+        <!-- Nueva Tarjeta: CRM / Retención -->
+        <a href="{% url 'taller:panel_retencion' %}" class="block group">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer h-full">
+                <div>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-wider group-hover:text-indigo-600 transition">
+                        Retención
+                    </p>
+                    <h3 class="text-3xl font-black text-gray-800 mt-1">
+                        {{ oportunidades_recompra }}
+                    </h3>
+                    <p class="text-xs text-indigo-600 mt-2 font-semibold">
+                        Servicios por agendar
+                    </p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:bg-indigo-100 transition shadow-inner">
+                    🔁
+                </div>
+            </div>
+        </a>
+
     </div>
 
     <!-- SECCIÓN DE RANKINGS Y DESEMPEÑO -->

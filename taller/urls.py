@@ -32,4 +32,6 @@ urlpatterns = [
     path('orden/<int:pk>/agregar-evidencia/', views.agregar_cargo_evidencia, name='agregar_cargo_evidencia'),
     path('orden/<int:pk>/inspeccion/', views.inspeccion_mecanico, name='inspeccion_mecanico'),
     path('rastreo/<uuid:token>/respuesta/<str:accion>/', views.responder_aprobacion, name='responder_aprobacion'),
+    path('retencion/', views.panel_retencion, name='panel_retencion'),
+    path('retencion/<int:pk>/marcar/', views.marcar_recordatorio, name='marcar_recordatorio'),
 ]

@@ -1,0 +1,85 @@
+<!-- inventario/templates/inventario/proveedores.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Directorio de Proveedores{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <!-- Columna Izquierda: Formulario Rápido -->
+        <div class="md:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
+                <div class="bg-gray-50 border-b border-gray-200 p-4">
+                    <h3 class="text-lg font-bold text-gray-800">➕ Nuevo Proveedor</h3>
+                </div>
+                <div class="p-6">
+                    <!-- Asegúrate de que el 'action' apunte al nombre de url correcto -->
+                    <form method="POST" action="{% url 'inventario:proveedores' %}" class="space-y-4">
+                        {% csrf_token %}
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Nombre / Empresa</label>
+                            <input type="text" name="nombre" required class="w-full rounded-lg border-gray-300 p-2.5 border focus:ring-2 focus:ring-blue-500 bg-gray-50 text-sm" placeholder="Ej. Distribuidora Shimano">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Teléfono o Contacto</label>
+                            <input type="text" name="telefono" class="w-full rounded-lg border-gray-300 p-2.5 border focus:ring-2 focus:ring-blue-500 bg-gray-50 text-sm" placeholder="Ej. 555-1234 (Opcional)">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Días de Visita / Surtido</label>
+                            <input type="text" name="dias_visita" class="w-full rounded-lg border-gray-300 p-2.5 border focus:ring-2 focus:ring-blue-500 bg-gray-50 text-sm" placeholder="Ej. Martes y Jueves">
+                        </div>
+
+                        <button type="submit" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition">
+                            Guardar Proveedor
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Lista de Proveedores -->
+        <div class="md:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 p-4">
+                    <h3 class="text-lg font-bold text-gray-800">📋 Proveedores Registrados</h3>
+                </div>
+                <div class="p-0">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white text-gray-400 text-xs uppercase tracking-wider">
+                                <th class="p-4 font-semibold border-b border-gray-100">Proveedor</th>
+                                <th class="p-4 font-semibold border-b border-gray-100">Contacto</th>
+                                <th class="p-4 font-semibold border-b border-gray-100">Visitas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            {% for prov in proveedores %}
+                            <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                                <td class="p-4">
+                                    <p class="font-bold text-gray-800">{{ prov.nombre }}</p>
+                                </td>
+                                <td class="p-4 text-gray-600">{{ prov.telefono|default:"-" }}</td>
+                                <td class="p-4">
+                                    <span class="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-1 rounded">
+                                        {{ prov.dias_visita|default:"No definido" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="p-8 text-center text-gray-400 italic">No tienes proveedores registrados aún.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

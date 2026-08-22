@@ -17,7 +17,7 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from .decorators import admin_requerido
-from core.decorators import modulo_requerido
+from core.decorators import modulo_requerido, roles_permitidos
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 
@@ -88,6 +88,22 @@ def nueva_orden(request):
             # Pausamos el guardado para inyectar los datos faltantes
             orden = form.save(commit=False)
             orden.sucursal = request.user.sucursal
+
+            # ==========================================
+            # MOTOR DE DETECCIÓN DE GARANTÍAS (30 DÍAS)
+            # ==========================================
+            hace_30_dias = timezone.now() - timedelta(days=30)
+
+            # Buscamos si esta misma bicicleta tiene una orden terminada recientemente
+            tuvo_servicio_reciente = OrdenTrabajo.objects.filter(
+                bicicleta=orden.bicicleta,
+                estado__in=['REPARADA', 'ENTREGADA'],
+                created_at__gte=hace_30_dias
+            ).exists()
+
+            if tuvo_servicio_reciente:
+                orden.es_posible_garantia = True
+            # ==========================================
 
             # El cliente se deduce automáticamente de la bicicleta seleccionada
             orden.cliente = orden.bicicleta.cliente
@@ -264,6 +280,7 @@ def cobrar_orden(request, pk):
             # 2. Actualizamos la orden
             orden.pagada = True
             orden.estado = 'ENTREGADA'  # Ya se pagó, ya se fue del taller
+            orden.fecha_proximo_servicio = timezone.now().date() + timedelta(days=180)
             orden.save()
 
         # Refrescamos el tablero de HTMX para que la orden desaparezca de la vista activa
@@ -299,6 +316,7 @@ def rastreo_publico(request, token):
 
 
 @login_required
+@roles_permitidos('ADMIN', 'CAJERO')
 def dashboard_inicio(request):
     """Muestra los indicadores clave (KPIs) del día para la sucursal activa."""
     sucursal = request.user.sucursal
@@ -403,7 +421,7 @@ def marcar_cita_atendida(request, pk):
 
 
 @login_required
-@admin_requerido
+@roles_permitidos('ADMIN')
 def corte_caja(request):
     """Genera el resumen de pagos del día para la sucursal activa"""
     sucursal = request.user.sucursal
@@ -433,7 +451,6 @@ def corte_caja(request):
     }
 
     return render(request, 'taller/corte_caja.html', context)
-
 
 
 @login_required
@@ -657,6 +674,7 @@ def avanzar_estado_orden(request, pk):
 
 
 @login_required
+@roles_permitidos('ADMIN')
 def dashboard(request):
     """Vista principal de métricas y analítica del taller"""
     sucursal = request.user.sucursal
@@ -701,6 +719,13 @@ def dashboard(request):
         ingreso_generado=Sum(F('cantidad') * F('precio'))
     ).order_by('-cantidad_vendida')[:5]
 
+    oportunidades_recompra = OrdenTrabajo.objects.filter(
+        sucursal=sucursal,
+        estado='ENTREGADA',
+        fecha_proximo_servicio__lte=hoy,  # Solo comparamos si la fecha proyectada ya es hoy o pasó
+        recordatorio_enviado=False
+    ).count()
+
     # 4. TENDENCIA DE VENTAS (Gráfica de los últimos 6 meses)
     hace_6_meses = hoy - timedelta(days=180)
     tendencia_mensual = CargoOrden.objects.filter(
@@ -726,6 +751,7 @@ def dashboard(request):
         'top_servicios': top_servicios,
         'chart_labels': json.dumps(meses_labels),
         'chart_data': json.dumps(meses_totales),
+        'oportunidades_recompra': oportunidades_recompra,
     }
 
     return render(request, 'taller/dashboard2.html', context)
@@ -887,3 +913,35 @@ def responder_aprobacion(request, token, accion):
         return redirect('taller:rastreo_publico', token=orden.uuid_publico)
 
     return HttpResponse(status=400)
+
+
+@login_required
+@roles_permitidos('ADMIN', 'CAJERO')
+@modulo_requerido('modulo_retencion')
+def panel_retencion(request):
+    """Muestra los clientes que requieren un servicio de mantenimiento próximo/vencido"""
+    hoy = timezone.now().date()
+
+    # Filtramos órdenes entregadas cuya fecha de próximo servicio ya llegó y no han sido contactados
+    recordatorios = OrdenTrabajo.objects.filter(
+        sucursal=request.user.sucursal,
+        estado='ENTREGADA',
+        fecha_proximo_servicio__lte=hoy,
+        recordatorio_enviado=False
+    ).select_related('cliente', 'bicicleta').order_by('fecha_proximo_servicio')
+
+    return render(request, 'taller/retencion.html', {'recordatorios': recordatorios})
+
+
+@login_required
+@roles_permitidos('ADMIN', 'CAJERO')
+def marcar_recordatorio(request, pk):
+    """HTMX Endpoint para marcar como enviado y desaparecer la fila"""
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+        orden.recordatorio_enviado = True
+        orden.save()
+
+        # Devolvemos un HttpResponse vacío.
+        # HTMX reemplazará la fila (<tr>) con esto, haciéndola desaparecer al instante.
+        return HttpResponse("")

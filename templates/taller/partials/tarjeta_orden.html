@@ -1,19 +1,27 @@
-<div class="bg-white p-4 rounded shadow border border-gray-200 hover:shadow-md cursor-grab transition-shadow">
-    <!-- Encabezado de la Tarjeta -->
+<div class="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition
+            {% if orden.es_posible_garantia %}border-2 border-red-500 shadow-red-100{% else %}border border-{{ color }}-200 border-l-4 border-l-{{ color }}-400{% endif %}"
+     hx-get="{% url 'taller:detalle_orden' orden.id %}"
+     hx-target="#slide-over-container">
+
     <div class="flex justify-between items-start mb-2">
         <span class="text-xs font-bold text-gray-500">#{{ orden.id }}</span>
-        <span class="text-[10px] bg-{{ color }}-100 text-{{ color }}-700 px-2 py-0.5 rounded-full font-semibold border border-{{ color }}-200">
-            {{ orden.bicicleta.get_tipo_display }}
-        </span>
+
+        <!-- Si es garantía, mostramos la etiqueta de alerta -->
+        {% if orden.es_posible_garantia %}
+            <span class="text-[10px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded flex items-center gap-1 animate-pulse">
+                ⚠️ POSIBLE GARANTÍA
+            </span>
+        {% else %}
+            <!-- Tu etiqueta normal de estado (si la tienes) -->
+            <span class="text-[10px] font-bold bg-{{ color }}-100 text-{{ color }}-700 px-2 py-0.5 rounded">
+                {{ orden.get_estado_display }}
+            </span>
+        {% endif %}
     </div>
 
     <!-- Datos de la Bici y Cliente -->
-    <h4 class="font-bold text-gray-800 text-sm mb-1 truncate" title="{{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}">
-        🚲 {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}
-    </h4>
-    <p class="text-xs text-gray-600 mb-3 truncate">
-        👤 {{ orden.bicicleta.cliente.nombre }}
-    </p>
+    <h4 class="font-bold text-gray-900">{{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}</h4>
+    <p class="text-sm text-gray-600 truncate mt-1">👤 {{ orden.cliente.nombre }}</p>
 
     <!-- Asignación e Interacción -->
     <div class="flex justify-between items-center border-t border-gray-100 pt-2">

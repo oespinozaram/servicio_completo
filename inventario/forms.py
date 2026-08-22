@@ -1,5 +1,5 @@
 from django import forms
-from .models import ItemInventario, ServicioCatalogo
+from .models import ItemInventario, ServicioCatalogo, Proveedor
 
 
 class ItemInventarioForm(forms.ModelForm):
@@ -18,6 +18,18 @@ class ItemInventarioForm(forms.ModelForm):
             'ubicacion_pasillo': forms.TextInput(attrs={'class': 'w-full rounded border-gray-300 p-2 border'}),
             'ubicacion_cajon': forms.TextInput(attrs={'class': 'w-full rounded border-gray-300 p-2 border'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        # Extraemos la sucursal antes de inicializar el formulario
+        sucursal = kwargs.pop('sucursal', None)
+        super().__init__(*args, **kwargs)
+
+        if sucursal:
+            self.fields['proveedor_principal'].queryset = Proveedor.objects.filter(
+                sucursal=sucursal,
+                activo=True
+            )
+            self.fields['proveedor_principal'].empty_label = "Sin proveedor asignado"
 
 
 

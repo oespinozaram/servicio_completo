@@ -1,0 +1,84 @@
+<!-- taller/templates/taller/retencion.html -->
+{% extends 'base.html' %}
+
+{% block header_title %}Panel de Retención (CRM){% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-6">
+
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg p-6 mb-8 text-white flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-black">Oportunidades de Recompra</h2>
+            <p class="text-blue-100 mt-1">Clientes que ya cumplieron su periodo sugerido de mantenimiento.</p>
+        </div>
+        <div class="bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+            <span class="text-3xl font-black">{{ recordatorios|length }}</span>
+            <span class="text-sm uppercase tracking-wide ml-1 font-semibold">Pendientes</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                    <th class="p-4 font-semibold border-b border-gray-100">Cliente</th>
+                    <th class="p-4 font-semibold border-b border-gray-100">Bicicleta</th>
+                    <th class="p-4 font-semibold border-b border-gray-100">Último Servicio</th>
+                    <th class="p-4 font-semibold border-b border-gray-100 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm">
+                {% for orden in recordatorios %}
+                <!-- El id es necesario para que HTMX sepa qué fila animar/remover -->
+                <tr id="fila-recordatorio-{{ orden.id }}" class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                    <td class="p-4">
+                        <p class="font-bold text-gray-900">{{ orden.cliente.nombre }}</p>
+                        <p class="text-xs text-gray-500">📱 {{ orden.cliente.telefono }}</p>
+                    </td>
+                    <td class="p-4 text-gray-700 font-medium">
+                        {{ orden.bicicleta.marca }} {{ orden.bicicleta.modelo }}
+                    </td>
+                    <td class="p-4">
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">
+                            Vencido: {{ orden.fecha_proximo_servicio|date:"d M Y" }}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right flex justify-end gap-2">
+
+                        <!-- Botón 1: Abrir WhatsApp con mensaje pre-armado -->
+                        <a href="https://wa.me/52{{ orden.cliente.telefono }}?text=¡Hola {{ orden.cliente.nombre }}! Te saludamos de tu taller de confianza. Notamos que tu {{ orden.bicicleta.marca }} cumplió su periodo sugerido de mantenimiento. ¿Te gustaría agendar una cita para mantenerla al 100%?"
+                           target="_blank"
+                           class="bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-3 rounded shadow-sm transition text-xs flex items-center gap-1">
+                            💬 Enviar WA
+                        </a>
+
+                        <!-- Botón 2: HTMX para marcar como enviado -->
+                        <button hx-post="{% url 'taller:marcar_recordatorio' orden.id %}"
+                                hx-target="#fila-recordatorio-{{ orden.id }}"
+                                hx-swap="outerHTML swap:1s"
+                                class="bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-600 font-bold py-1.5 px-3 rounded border border-gray-200 transition text-xs flex items-center gap-1">
+                            ✅ Listo
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-12 text-center">
+                        <span class="text-4xl block mb-3"> Inbox Zero 🏆</span>
+                        <p class="text-gray-500 font-medium">No hay recordatorios pendientes por enviar.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pequeño estilo para suavizar la salida de la fila con HTMX -->
+<style>
+    tr.htmx-swapping {
+        opacity: 0;
+        transition: opacity 0.5s ease-out;
+    }
+</style>
+{% endblock %}
