@@ -32,7 +32,7 @@
         <nav class="flex-1 overflow-y-auto py-6">
             <ul class="space-y-2">
                 <li>
-                    <a href="{% url 'taller:dashboard' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                    <a href="{% url 'taller:dashboard_inicio' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
                         📊 Dashboard
                     </a>
                 </li>
@@ -49,18 +49,11 @@
                     </a>
                 </li>
                 {% else %}
-                    <!-- TARJETA BLOQUEADA (Plan Básico) -> Upselling -->
-                    <div class="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-6 relative overflow-hidden flex flex-col justify-center items-center text-center opacity-80">
-                        <div class="absolute inset-0 bg-gray-100/50 backdrop-blur-[2px] z-10 flex flex-col justify-center items-center">
-                            <span class="text-3xl mb-2">🔒</span>
-                            <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                Función Premium
-                            </span>
-                        </div>
-
-                        <p class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Retención CRM</p>
-                        <p class="text-xs text-gray-500 max-w-[180px]">Genera recompras automáticas contactando a clientes por WhatsApp.</p>
-                    </div>
+                    <li>
+                        <a href="#" class="block px-6 py-2.5 text-gray-400 opacity-50 cursor-not-allowed" title="Mejora tu plan para activar el módulo de Retención CRM">
+                            🔒 Retención (CRM)
+                        </a>
+                    </li>
                 {% endif %}
 
 
@@ -92,7 +85,7 @@
                 {% if request.user.rol == 'ADMIN' %}
                     <li>
                         <a href="{% url 'taller:gestion_personal' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
-                            📦 Gestion de Personal
+                            👥 Gestión de Personal
                         </a>
                     </li>
                     <li>
@@ -106,10 +99,25 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'taller:dashboard2' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
-                            📦 Dashboard Analitico
+                        <a href="{% url 'taller:dashboard_analitico' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                            📊 Dashboard Analítico
                         </a>
                     </li>
+
+                    {% comment %}── Módulo: Inventario Avanzado (Proveedores y Compras) ──{% endcomment %}
+                    {% if request.user.tenant.modulo_inventario_avanzado %}
+                        <li>
+                            <a href="{% url 'inventario:proveedores' %}" class="block px-6 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors border-l-4 border-transparent hover:border-blue-500">
+                                🏭 Proveedores / Compras
+                            </a>
+                        </li>
+                    {% else %}
+                        <li>
+                            <a href="#" class="block px-6 py-2.5 text-gray-400 opacity-50 cursor-not-allowed" title="Mejora tu plan para activar el módulo de Inventario Avanzado">
+                                🔒 Proveedores / Compras
+                            </a>
+                        </li>
+                    {% endif %}
                 {% endif %}
             </ul>
         </nav>

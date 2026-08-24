@@ -7,9 +7,9 @@ from .forms import OrdenTrabajoForm, CitaForm
 from clientes.models import Bicicleta
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-from inventario.models import ServicioCatalogo, ItemInventario
-from .models import DetalleOrdenServicio, DetalleOrdenPieza, Pago, Cita, CargoOrden, OrdenTrabajo
-from .forms import EmpleadoForm
+from inventario.models import ServicioCatalogo, ItemInventario, Proveedor
+from .models import DetalleOrdenServicio, DetalleOrdenPieza, Pago, Cita, CargoOrden, OrdenTrabajo, Evidencia
+from .forms import EmpleadoForm, EvidenciaForm
 from django.db import transaction
 from django.urls import reverse
 import urllib.parse
@@ -178,8 +178,37 @@ def detalle_orden(request, pk):  # O el nombre que tenga tu vista
 
     return render(request, 'taller/partials/detalle_orden_slideover.html', {
         'orden': orden,
-        'mecanicos': mecanicos  # <-- Asegúrate de mandar esta variable
+        'mecanicos': mecanicos,
     })
+
+
+@login_required
+def subir_evidencia(request, pk):
+    """
+    Recibe el POST multipart del formulario de evidencia desde la vista
+    inspeccion_mecanico, valida la extensión del archivo y lo asocia a
+    la OrdenTrabajo correspondiente.
+    Redirige de vuelta a inspeccion_mecanico al terminar (éxito o error).
+    """
+    orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
+
+    if request.method == 'POST':
+        form = EvidenciaForm(request.POST, request.FILES)
+        if form.is_valid():
+            evidencia = form.save(commit=False)
+            evidencia.orden = orden
+            evidencia.save()
+            # Volvemos a la pantalla del mecánico con los archivos frescos
+            return redirect('taller:inspeccion_mecanico', pk=pk)
+
+        # Si hay errores de validación, regresamos a inspeccion_mecanico
+        # pasando el form con errores para que el template los muestre.
+        return render(request, 'taller/inspeccion_mecanico.html', {
+            'orden': orden,
+            'evidencia_form': form,
+        }, status=422)
+
+    return redirect('taller:inspeccion_mecanico', pk=pk)
 
 
 @login_required
@@ -349,6 +378,33 @@ def dashboard_inicio(request):
         estado__in=['LISTA', 'REPARACION']
     ).select_related('bicicleta__cliente').order_by('-updated_at')[:5]
 
+    # 4. Proveedores esperados hoy
+    # Mapeamos el weekday() de Python (0=Lunes) a nombres en español con
+    # dos variantes por día que tenga acento, para hacer el icontains robusto
+    # contra registros escritos con o sin tilde.
+    DIAS_SEMANA = {
+        0: ['Lunes'],
+        1: ['Martes'],
+        2: ['Miércoles', 'Miercoles'],
+        3: ['Jueves'],
+        4: ['Viernes'],
+        5: ['Sábado', 'Sabado'],
+        6: ['Domingo'],
+    }
+    dia_actual = DIAS_SEMANA[timezone.now().weekday()][0]   # nombre canónico (con acento)
+    variantes_dia = DIAS_SEMANA[timezone.now().weekday()]   # lista con todas las variantes
+
+    # Construimos un filtro OR para cada variante del nombre del día
+    filtro_dia = Q()
+    for variante in variantes_dia:
+        filtro_dia |= Q(dias_visita__icontains=variante)
+
+    proveedores_hoy = Proveedor.objects.filter(
+        filtro_dia,
+        sucursal=sucursal,
+        activo=True,
+    )
+
     context = {
         'ingreso_total': ingreso_total,
         'ingreso_efectivo': ingreso_efectivo,
@@ -357,9 +413,11 @@ def dashboard_inicio(request):
         'bicis_listas': bicis_listas,
         'proximas_entregas': proximas_entregas,
         'hoy': hoy,
+        'proveedores_hoy': proveedores_hoy,
+        'dia_actual': dia_actual,
     }
 
-    return render(request, 'taller/dashboard.html', context)
+    return render(request, 'taller/dashboard_inicio.html', context)
 
 
 @login_required
@@ -675,7 +733,7 @@ def avanzar_estado_orden(request, pk):
 
 @login_required
 @roles_permitidos('ADMIN')
-def dashboard(request):
+def dashboard_analitico(request):
     """Vista principal de métricas y analítica del taller"""
     sucursal = request.user.sucursal
     hoy = timezone.now().date()
@@ -754,7 +812,7 @@ def dashboard(request):
         'oportunidades_recompra': oportunidades_recompra,
     }
 
-    return render(request, 'taller/dashboard2.html', context)
+    return render(request, 'taller/dashboard_analitico.html', context)
 
 
 @login_required
@@ -881,11 +939,13 @@ def agregar_cargo_evidencia(request, pk):
 
 @login_required
 def inspeccion_mecanico(request, pk):
-    """Pantalla vertical dedicada para que el mecánico registre hallazgos"""
+    """Pantalla vertical dedicada para que el mecánico registre hallazgos y suba evidencias"""
     orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
 
     return render(request, 'taller/inspeccion_mecanico.html', {
-        'orden': orden
+        'orden': orden,
+        'evidencia_form': EvidenciaForm(),
+        'evidencias': orden.evidencias.all(),
     })
 
 

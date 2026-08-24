@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CategoriaServicio, ServicioCatalogo, ItemInventario
+from .models import CategoriaServicio, ServicioCatalogo, ItemInventario, Proveedor
 
 @admin.register(CategoriaServicio)
 class CategoriaServicioAdmin(admin.ModelAdmin):
@@ -18,3 +18,9 @@ class ItemInventarioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'codigo_barras', 'sucursal', 'stock', 'precio_venta')
     search_fields = ('nombre', 'codigo_barras', 'sucursal__nombre', 'sucursal__tenant__nombre')
     list_filter = ('sucursal', 'sucursal__tenant')
+
+
+@admin.register(Proveedor)
+class ProveedorAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'telefono', 'dias_visita',)
+    search_fields = ('nombre', 'dias_visita',)

@@ -1,13 +1,13 @@
 <div class="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition
-            {% if orden.es_posible_garantia %}border-2 border-red-500 shadow-red-100{% else %}border border-{{ color }}-200 border-l-4 border-l-{{ color }}-400{% endif %}"
+            {% if orden.es_posible_garantia and request.user.tenant.modulo_garantias %}border-2 border-red-500 shadow-red-100{% else %}border border-{{ color }}-200 border-l-4 border-l-{{ color }}-400{% endif %}"
      hx-get="{% url 'taller:detalle_orden' orden.id %}"
      hx-target="#slide-over-container">
 
     <div class="flex justify-between items-start mb-2">
         <span class="text-xs font-bold text-gray-500">#{{ orden.id }}</span>
 
-        <!-- Si es garantía, mostramos la etiqueta de alerta -->
-        {% if orden.es_posible_garantia %}
+        <!-- Si es garantía Y el módulo está activo, mostramos la etiqueta de alerta -->
+        {% if orden.es_posible_garantia and request.user.tenant.modulo_garantias %}
             <span class="text-[10px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded flex items-center gap-1 animate-pulse">
                 ⚠️ POSIBLE GARANTÍA
             </span>

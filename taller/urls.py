@@ -4,7 +4,7 @@ from . import views
 app_name = 'taller'
 
 urlpatterns = [
-    path('', views.dashboard_inicio, name='dashboard'),
+    path('', views.dashboard_inicio, name='dashboard_inicio'),
     path('kanban/', views.tablero_kanban, name='kanban'),
     path('nueva/', views.nueva_orden, name='nueva_orden'),
     path('buscar-bicicletas/', views.buscar_bicicletas, name='buscar_bicicletas'),
@@ -25,7 +25,7 @@ urlpatterns = [
     path('orden/<int:pk>/imprimir/', views.imprimir_ticket, name='imprimir_ticket'),
     path('orden/<int:pk>/whatsapp/', views.notificar_whatsapp, name='notificar_whatsapp'),
     path('orden/<int:pk>/avanzar/', views.avanzar_estado_orden, name='avanzar_estado_orden'),
-    path('dashboard/', views.dashboard, name='dashboard2'),
+    path('dashboard/', views.dashboard_analitico, name='dashboard_analitico'),
     path('personal/', views.gestion_personal, name='gestion_personal'),
     path('personal/<int:pk>/editar/', views.editar_empleado, name='editar_empleado'),
     path('personal/<int:pk>/toggle-estado/', views.toggle_estado_empleado, name='toggle_estado_empleado'),
@@ -34,4 +34,5 @@ urlpatterns = [
     path('rastreo/<uuid:token>/respuesta/<str:accion>/', views.responder_aprobacion, name='responder_aprobacion'),
     path('retencion/', views.panel_retencion, name='panel_retencion'),
     path('retencion/<int:pk>/marcar/', views.marcar_recordatorio, name='marcar_recordatorio'),
+    path('orden/<int:pk>/subir-evidencia/', views.subir_evidencia, name='subir_evidencia'),
 ]

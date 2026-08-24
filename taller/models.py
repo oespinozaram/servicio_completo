@@ -158,3 +158,37 @@ class CargoOrden(models.Model):
 
     def __str__(self):
         return f"{self.cantidad}x {self.descripcion} - ${self.subtotal}"
+
+
+class Evidencia(models.Model):
+    """
+    Almacena archivos multimedia (fotos y videos cortos) asociados a una orden.
+    Usa FileField en lugar de ImageField para soportar tanto imágenes como clips mp4/mov.
+    Los archivos se guardan localmente en MEDIA_ROOT/evidencias/YYYY/MM/.
+    """
+    orden = models.ForeignKey(
+        OrdenTrabajo,
+        on_delete=models.CASCADE,
+        related_name='evidencias'
+    )
+    archivo = models.FileField(upload_to='evidencias/%Y/%m/')
+    descripcion = models.CharField(max_length=255, blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_subida']
+
+    def __str__(self):
+        return f"Evidencia #{self.id} – Orden #{self.orden_id}"
+
+    @property
+    def es_video(self):
+        """Detecta si el archivo es un video por su extensión."""
+        nombre = self.archivo.name.lower()
+        return nombre.endswith(('.mp4', '.mov', '.webm', '.avi'))
+
+    @property
+    def es_imagen(self):
+        """Detecta si el archivo es una imagen por su extensión."""
+        nombre = self.archivo.name.lower()
+        return nombre.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))

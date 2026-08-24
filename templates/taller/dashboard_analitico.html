@@ -55,6 +55,7 @@
         </div>
 
         <!-- Nueva Tarjeta: CRM / Retención -->
+        {% if request.user.tenant.modulo_retencion %}
         <a href="{% url 'taller:panel_retencion' %}" class="block group">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer h-full">
                 <div>
@@ -73,6 +74,20 @@
                 </div>
             </div>
         </a>
+        {% else %}
+        <!-- Placeholder bloqueado: módulo de Retención inactivo -->
+        <div class="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-6 relative overflow-hidden flex flex-col justify-center items-center text-center opacity-70 h-full min-h-[112px]">
+            <div class="absolute inset-0 bg-gray-100/60 backdrop-blur-[2px] z-10 flex flex-col justify-center items-center gap-2">
+                <span class="text-3xl">🔒</span>
+                <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                    Función Inactiva
+                </span>
+                <p class="text-xs text-gray-500 mt-1 max-w-[200px]">Activa el módulo de Retención para contactar clientes y generar recompras automáticas.</p>
+            </div>
+            <p class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">Retención CRM</p>
+        </div>
+        {% endif %}
+
 
     </div>
 

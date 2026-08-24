@@ -129,7 +129,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTH_USER_MODEL = 'core.User'
 
-LOGIN_REDIRECT_URL = 'taller:dashboard'
+LOGIN_REDIRECT_URL = 'taller:dashboard_inicio'
 
 LOGIN_URL = 'login'
 

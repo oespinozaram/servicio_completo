@@ -4,7 +4,7 @@ from django.db.models import Q, F
 from django.http import HttpResponse
 from .models import ItemInventario, ServicioCatalogo
 from .forms import ItemInventarioForm, ServicioCatalogoForm
-from core.decorators import roles_permitidos
+from core.decorators import roles_permitidos, modulo_requerido
 from .models import Proveedor
 
 
@@ -112,6 +112,7 @@ def buscar_inventario_global(request):
 
 @login_required
 @roles_permitidos('ADMIN')
+@modulo_requerido('modulo_inventario_avanzado')
 def gestion_proveedores(request):
     """Vista sencilla para listar y agregar proveedores"""
     if request.method == 'POST':
@@ -133,6 +134,7 @@ def gestion_proveedores(request):
 
 @login_required
 @roles_permitidos('ADMIN')
+@modulo_requerido('modulo_inventario_avanzado')
 def lista_compras(request):
     """Genera la lista de faltantes automáticamente"""
 

@@ -5,6 +5,42 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-6">
+    {% if request.user.tenant.modulo_inventario_avanzado %}
+        {% if proveedores_hoy %}
+        <!-- ── Banner: Proveedores esperados hoy ── -->
+        <div class="bg-amber-50 border border-amber-300 rounded-lg px-5 py-4 flex items-start gap-4 shadow-sm">
+            <!-- Icono -->
+            <span class="text-2xl mt-0.5 flex-shrink-0">🚚</span>
+
+            <!-- Contenido -->
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-amber-800 mb-2">
+                    Proveedores esperados hoy ({{ dia_actual }}):
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    {% for proveedor in proveedores_hoy %}
+                    <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold px-3 py-1 rounded-full"
+                          {% if proveedor.telefono %}title="📞 {{ proveedor.telefono }}"{% endif %}>
+                        🏭 {{ proveedor.nombre }}
+                        {% if proveedor.telefono %}
+                            <span class="text-amber-600 font-normal">· {{ proveedor.telefono }}</span>
+                        {% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+
+
+            <!-- Contador lateral -->
+            <div class="flex-shrink-0 text-right hidden sm:block">
+                <span class="text-2xl font-black text-amber-700">{{ proveedores_hoy|length }}</span>
+                <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                    {{ proveedores_hoy|length|pluralize:"Proveedor,Proveedores" }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
 
     <!-- Fila de Tarjetas de Métricas (KPIs) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

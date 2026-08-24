@@ -8,7 +8,7 @@ def landing_page(request):
     # Si el usuario ya inició sesión, no tiene caso mostrarle la página de ventas,
     # lo mandamos directo a su panel de control.
     if request.user.is_authenticated:
-        return redirect('taller:dashboard')
+        return redirect('taller:dashboard_inicio')
 
     return render(request, 'core/landing.html')
 
@@ -25,4 +25,4 @@ class LoginInteligenteView(LoginView):
             return reverse_lazy('taller:kanban')
 
         # Si es Dueño o Cajero, necesitan ver los números y el CRM
-        return reverse_lazy('taller:dashboard')
+        return reverse_lazy('taller:dashboard_inicio')

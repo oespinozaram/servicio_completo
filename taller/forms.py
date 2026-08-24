@@ -1,5 +1,5 @@
 from django import forms
-from .models import OrdenTrabajo, Cita
+from .models import OrdenTrabajo, Cita, Evidencia
 from clientes.models import Bicicleta
 from core.models import User
 from django.core.exceptions import ValidationError
@@ -121,3 +121,51 @@ class CitaForm(forms.ModelForm):
                     f"¡Horario saturado! Ya tenemos {citas_existentes} citas agendadas para las {hora.strftime('%H:%M')} hrs. Por favor, elige otro horario.")
 
         return cleaned_data
+
+
+# ── Módulo: Evidencias Multimedia ─────────────────────────────────────────────
+
+# Extensiones permitidas (minúsculas). Se verifica contra la extensión real del archivo.
+EXTENSIONES_PERMITIDAS = {
+    # Imágenes
+    '.jpg', '.jpeg', '.png', '.webp', '.gif',
+    # Videos cortos
+    '.mp4', '.mov', '.webm', '.avi',
+}
+
+
+class EvidenciaForm(forms.ModelForm):
+    class Meta:
+        model = Evidencia
+        fields = ['archivo', 'descripcion']
+        widgets = {
+            'archivo': forms.ClearableFileInput(attrs={
+                'accept': 'image/*,video/mp4,video/quicktime,video/webm,video/x-msvideo',
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 '
+                         'file:rounded-md file:border-0 file:text-sm file:font-semibold '
+                         'file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer',
+            }),
+            'descripcion': forms.TextInput(attrs={
+                'placeholder': 'Ej. Fisura en el balero trasero (opcional)',
+                'class': 'w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm '
+                         'focus:border-blue-500 focus:ring-blue-500',
+            }),
+        }
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data.get('archivo')
+        if not archivo:
+            raise ValidationError("Debes seleccionar un archivo.")
+
+        # Obtenemos la extensión en minúsculas
+        import os
+        _, ext = os.path.splitext(archivo.name)
+        ext = ext.lower()
+
+        if ext not in EXTENSIONES_PERMITIDAS:
+            formatos = ', '.join(sorted(EXTENSIONES_PERMITIDAS))
+            raise ValidationError(
+                f"Formato no permitido: '{ext}'. "
+                f"Solo se aceptan: {formatos}"
+            )
+        return archivo

@@ -70,6 +70,90 @@
                 Guardar Hallazgo
             </button>
         </form>
+
+        <!-- ── Sección: Subir Evidencia General ─────────────────────────── -->
+        <div class="mt-8 border-t border-gray-200 pt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📸 Subir Evidencia</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Adjunta fotos o videos cortos de la bicicleta sin necesidad de registrar un cargo extra.
+            </p>
+
+            <!-- CRÍTICO: enctype="multipart/form-data" es obligatorio para archivos -->
+            <form action="{% url 'taller:subir_evidencia' orden.id %}"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Campo de archivo -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        Seleccionar foto o video
+                    </label>
+                    {{ evidencia_form.archivo }}
+                    {% if evidencia_form.archivo.errors %}
+                        {% for error in evidencia_form.archivo.errors %}
+                            <p class="mt-1 text-sm text-red-600 font-medium">⚠️ {{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-1">
+                        Formatos permitidos: JPG, PNG, WEBP, GIF, MP4, MOV, WEBM
+                    </p>
+                </div>
+
+                <!-- Campo de descripción -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">
+                        Descripción (opcional)
+                    </label>
+                    {{ evidencia_form.descripcion }}
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-gray-700 hover:bg-gray-900 text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition">
+                    ⬆️ Guardar Evidencia
+                </button>
+            </form>
+        </div>
+
+        <!-- ── Galería de Evidencias subidas ─────────────────────────────── -->
+        {% if evidencias %}
+        <div class="mt-8 border-t border-gray-200 pt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">🗂️ Evidencias ({{ evidencias|length }})</h3>
+            <div class="grid grid-cols-2 gap-3">
+                {% for evidencia in evidencias %}
+                <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                    {% if evidencia.es_video %}
+                        <video controls class="w-full h-36 object-cover bg-black" preload="metadata">
+                            <source src="{{ evidencia.archivo.url }}" type="video/mp4">
+                        </video>
+                    {% elif evidencia.es_imagen %}
+                        <a href="{{ evidencia.archivo.url }}" target="_blank">
+                            <img src="{{ evidencia.archivo.url }}"
+                                 alt="{{ evidencia.descripcion|default:'Evidencia' }}"
+                                 class="w-full h-36 object-cover hover:opacity-90 transition">
+                        </a>
+                    {% else %}
+                        <div class="h-36 flex items-center justify-center bg-gray-100">
+                            <a href="{{ evidencia.archivo.url }}" target="_blank" download
+                               class="flex flex-col items-center gap-2 text-blue-600 text-sm font-medium">
+                                <span class="text-4xl">📎</span>
+                                Descargar
+                            </a>
+                        </div>
+                    {% endif %}
+                    <div class="p-2">
+                        {% if evidencia.descripcion %}
+                            <p class="text-xs font-medium text-gray-700 truncate">{{ evidencia.descripcion }}</p>
+                        {% endif %}
+                        <p class="text-[10px] text-gray-400 mt-0.5">{{ evidencia.fecha_subida|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}
