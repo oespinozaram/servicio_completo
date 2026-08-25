@@ -57,3 +57,22 @@ class BotSession(models.Model):
     plataforma = models.CharField(max_length=20, choices=[('TELEGRAM', 'Telegram'), ('WHATSAPP', 'WhatsApp')])
     chat_id = models.CharField(max_length=100, unique=True)
     activo = models.BooleanField(default=True)
+
+
+class Prospecto(models.Model):
+    """Lead capturado desde la landing page que solicita una demo."""
+    nombre_taller = models.CharField(max_length=150)
+    telefono = models.CharField(max_length=30)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    contactado = models.BooleanField(
+        default=False,
+        help_text="Marcar cuando el equipo de ventas ya hizo el seguimiento."
+    )
+
+    class Meta:
+        ordering = ['-fecha_solicitud']
+        verbose_name = 'Prospecto'
+        verbose_name_plural = 'Prospectos'
+
+    def __str__(self):
+        return f"{self.nombre_taller} — {self.telefono}"

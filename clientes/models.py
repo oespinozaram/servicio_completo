@@ -18,6 +18,8 @@ class Bicicleta(models.Model):
         ('RUTA', 'Ruta'),
         ('MTB', 'Montaña (MTB)'),
         ('URBANA', 'Urbana / Paseo'),
+        ('GRAVEL', 'Gravel'),
+        ('PLEGABLE', 'Plegable'),
         ('EBIKE', 'Eléctrica (E-Bike)'),
     ]
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='bicicletas')

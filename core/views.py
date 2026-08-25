@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.views import LoginView
+from django.contrib import messages
 from django.urls import reverse_lazy
+from .models import Prospecto
 
 
 def landing_page(request):
@@ -26,3 +28,23 @@ class LoginInteligenteView(LoginView):
 
         # Si es Dueño o Cajero, necesitan ver los números y el CRM
         return reverse_lazy('taller:dashboard_inicio')
+
+
+def solicitar_demo(request):
+    """Captura el formulario de la landing y guarda el prospecto."""
+    if request.method == 'POST':
+        nombre_taller = request.POST.get('nombre_taller', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+
+        if nombre_taller and telefono:
+            Prospecto.objects.create(
+                nombre_taller=nombre_taller,
+                telefono=telefono,
+            )
+            messages.success(
+                request,
+                f'¡Gracias, {nombre_taller}! Te contactaremos pronto para agendar tu demo. 🚲'
+            )
+
+    # Tanto en éxito como en GET directo, redirigimos a la landing
+    return redirect('landing_page')

@@ -1,5 +1,5 @@
 <!-- taller/templates/taller/inspeccion_mecanico.html -->
-{% extends 'base.html' %} <!-- Asumiendo que tu base respeta layouts móviles -->
+{% extends 'base.html' %}
 
 {% block header_title %}Modo Inspección{% endblock %}
 
@@ -7,7 +7,7 @@
 <!-- Forzamos un ancho máximo de celular (max-w-md) para mantener el formato vertical -->
 <div class="max-w-md mx-auto bg-white min-h-[80vh] shadow-xl rounded-t-3xl overflow-hidden mt-4 border border-gray-200">
 
-    <!-- Encabezado Fijo con el Contexto -->
+    <!-- Encabezado con contexto de la orden -->
     <div class="bg-blue-600 text-white p-5">
         <div class="flex justify-between items-start mb-2">
             <span class="bg-blue-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Orden #{{ orden.id }}</span>
@@ -17,32 +17,66 @@
         <p class="text-blue-100 mt-1">👤 {{ orden.cliente.nombre }}</p>
     </div>
 
-    <!-- Contenido Scrollable -->
-    <div class="p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📋 Registrar Hallazgo</h3>
+    <!-- ── Pestañas de Navegación ─────────────────────────────────────── -->
+    <div class="flex border-b border-gray-200 bg-gray-50" role="tablist">
+        <button id="tab-hallazgo"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-hallazgo"
+                onclick="activarTab('hallazgo')"
+                class="flex-1 py-3 px-4 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition focus:outline-none">
+            📋 Hallazgo / Cargo
+        </button>
+        <button id="tab-evidencias"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-evidencias"
+                onclick="activarTab('evidencias')"
+                class="flex-1 py-3 px-4 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition focus:outline-none">
+            📸 Evidencias
+            {% if evidencias %}
+                <span class="ml-1 bg-blue-100 text-blue-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ evidencias|length }}</span>
+            {% endif %}
+        </button>
+    </div>
 
-        <!-- Formulario Premium de Evidencias (Apuntando a la vista que ya hicimos) -->
-        <form action="{% url 'taller:agregar_cargo_evidencia' orden.id %}" method="POST" enctype="multipart/form-data" class="space-y-5">
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- PANEL 1: Registrar Hallazgo / Cargo extra                         -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div id="panel-hallazgo" role="tabpanel" class="p-6">
+        <p class="text-sm text-gray-500 mb-5">
+            Registra un servicio o refacción adicional encontrado durante la inspección. Puedes adjuntar una foto y solicitar autorización al cliente.
+        </p>
+
+        <!-- Formulario original de cargo con evidencia (sin cambios en su lógica) -->
+        <form action="{% url 'taller:agregar_cargo_evidencia' orden.id %}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="space-y-5">
             {% csrf_token %}
 
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">Servicio Extra o Refacción</label>
-                <input type="text" name="descripcion" required class="w-full text-lg rounded-lg border-gray-300 p-3 border focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="Ej. Balero central roto">
+                <input type="text" name="descripcion" required
+                       class="w-full text-lg rounded-lg border-gray-300 p-3 border focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                       placeholder="Ej. Balero central roto">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Precio ($)</label>
-                    <input type="number" step="0.01" name="precio" required class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
+                    <input type="number" step="0.01" name="precio" required
+                           class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Cantidad</label>
-                    <input type="number" name="cantidad" value="1" min="1" required class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
+                    <input type="number" name="cantidad" value="1" min="1" required
+                           class="w-full text-lg rounded-lg border-gray-300 p-3 border bg-gray-50">
                 </div>
             </div>
 
-            <!-- Botón gigante para la cámara -->
-            <div class="mt-4 p-4 border-2 border-dashed border-gray-300 rounded-xl text-center bg-gray-50 hover:bg-gray-100 transition">
+            <!-- Botón de cámara para la foto del hallazgo -->
+            <div class="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center bg-gray-50 hover:bg-gray-100 transition">
                 <label class="cursor-pointer block">
                     <span class="text-4xl block mb-2">📸</span>
                     <span class="font-bold text-blue-600">Tomar Foto de Evidencia</span>
@@ -52,12 +86,15 @@
 
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">Justificación Técnica</label>
-                <textarea name="evidencia_nota" rows="3" required class="w-full text-md rounded-lg border-gray-300 p-3 border bg-gray-50" placeholder="Explícale al cliente por qué debe cambiar esta pieza..."></textarea>
+                <textarea name="evidencia_nota" rows="3" required
+                          class="w-full text-md rounded-lg border-gray-300 p-3 border bg-gray-50"
+                          placeholder="Explícale al cliente por qué debe cambiar esta pieza..."></textarea>
             </div>
 
-            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mt-4">
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
                 <label class="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" name="requiere_aprobacion" class="mt-1 w-5 h-5 text-yellow-600 rounded" checked>
+                    <input type="checkbox" name="requiere_aprobacion"
+                           class="mt-1 w-5 h-5 text-yellow-600 rounded" checked>
                     <div>
                         <span class="font-bold text-yellow-800 block">Solicitar Autorización</span>
                         <span class="text-xs text-yellow-700">Pausa la orden y notifica al cliente para que apruebe el cargo.</span>
@@ -65,17 +102,38 @@
                 </label>
             </div>
 
-            <!-- Aquí usamos un POST normal (sin HTMX) para redireccionar de vuelta al Kanban de forma segura tras subir la imagen -->
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition mt-6">
+            <!-- POST normal (sin HTMX) → redirige al Kanban de forma segura -->
+            <button type="submit"
+                    onclick="this.disabled=true; this.innerHTML='⏳ Guardando...'; this.closest('form').submit();"
+                    class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition mt-2">
                 Guardar Hallazgo
             </button>
         </form>
+    </div>
 
-        <!-- ── Sección: Subir Evidencia General ─────────────────────────── -->
-        <div class="mt-8 border-t border-gray-200 pt-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📸 Subir Evidencia</h3>
-            <p class="text-sm text-gray-500 mb-4">
-                Adjunta fotos o videos cortos de la bicicleta sin necesidad de registrar un cargo extra.
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- PANEL 2: Evidencias Generales de la Bici                          -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div id="panel-evidencias" role="tabpanel" class="p-6 hidden">
+
+        <!-- ── Mensajes de resultado tras una subida ─────────────────── -->
+        {% if errores_evidencia %}
+        <div class="mb-5 bg-red-50 border border-red-200 rounded-xl p-4 space-y-1">
+            <p class="text-sm font-bold text-red-700 mb-2">
+                ⚠️ {{ guardados_evidencia }} archivo{% if guardados_evidencia != 1 %}s{% endif %} guardado{% if guardados_evidencia != 1 %}s{% endif %}.
+                Los siguientes no se pudieron subir:
+            </p>
+            {% for error in errores_evidencia %}
+                <p class="text-xs text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ── Formulario de subida múltiple ─────────────────────────── -->
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+            <h3 class="text-base font-bold text-gray-800 mb-1">Subir Fotos / Videos</h3>
+            <p class="text-xs text-gray-500 mb-4">
+                Selecciona uno o varios archivos simultáneamente. No es necesario registrar un cargo extra.
             </p>
 
             <!-- CRÍTICO: enctype="multipart/form-data" es obligatorio para archivos -->
@@ -85,50 +143,64 @@
                   class="space-y-4">
                 {% csrf_token %}
 
-                <!-- Campo de archivo -->
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
-                        Seleccionar foto o video
+                <!-- Input multi-archivo con acceso a cámara en móviles -->
+                <div class="p-4 border-2 border-dashed border-blue-300 rounded-xl text-center bg-white hover:bg-blue-50 transition cursor-pointer">
+                    <label class="cursor-pointer block">
+                        <span class="text-4xl block mb-2">📁</span>
+                        <span class="font-bold text-blue-600 block">Seleccionar archivos</span>
+                        <span class="text-xs text-gray-400">Puedes elegir varios a la vez</span>
+                        <!-- name="archivos" + multiple: permite selección múltiple -->
+                        <input type="file"
+                               name="archivos"
+                               accept="image/*,video/*"
+                               multiple
+                               required
+                               class="hidden"
+                               id="input-archivos"
+                               onchange="mostrarNombres(this)">
                     </label>
-                    {{ evidencia_form.archivo }}
-                    {% if evidencia_form.archivo.errors %}
-                        {% for error in evidencia_form.archivo.errors %}
-                            <p class="mt-1 text-sm text-red-600 font-medium">⚠️ {{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                    <p class="text-xs text-gray-400 mt-1">
-                        Formatos permitidos: JPG, PNG, WEBP, GIF, MP4, MOV, WEBM
-                    </p>
+                    <!-- Preview de nombres seleccionados -->
+                    <p id="nombres-archivos" class="mt-2 text-xs text-gray-500 italic"></p>
                 </div>
+                <p class="text-xs text-gray-400">
+                    Formatos: JPG, PNG, WEBP, GIF, MP4, MOV, WEBM
+                </p>
 
-                <!-- Campo de descripción -->
+                <!-- Descripción compartida para todos los archivos de esta subida -->
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">
-                        Descripción (opcional)
+                        Descripción general (opcional)
                     </label>
-                    {{ evidencia_form.descripcion }}
+                    <input type="text"
+                           name="descripcion"
+                           placeholder="Ej. Estado inicial de la bicicleta"
+                           class="w-full rounded-lg border border-gray-300 p-3 text-sm bg-white focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-gray-700 hover:bg-gray-900 text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition">
-                    ⬆️ Guardar Evidencia
+                        id="btn-subir-evidencias"
+                        onclick="return iniciarSubida(this);"
+                        class="w-full bg-gray-800 hover:bg-gray-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-black text-lg py-4 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-3">
+                    <span id="btn-subir-texto">⬆️ Guardar Evidencias</span>
                 </button>
             </form>
         </div>
 
-        <!-- ── Galería de Evidencias subidas ─────────────────────────────── -->
+        <!-- ── Galería de archivos ya subidos ────────────────────────── -->
         {% if evidencias %}
-        <div class="mt-8 border-t border-gray-200 pt-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">🗂️ Evidencias ({{ evidencias|length }})</h3>
+        <div>
+            <h3 class="text-base font-bold text-gray-700 mb-3">
+                🗂️ Archivos subidos ({{ evidencias|length }})
+            </h3>
             <div class="grid grid-cols-2 gap-3">
                 {% for evidencia in evidencias %}
-                <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     {% if evidencia.es_video %}
                         <video controls class="w-full h-36 object-cover bg-black" preload="metadata">
                             <source src="{{ evidencia.archivo.url }}" type="video/mp4">
                         </video>
                     {% elif evidencia.es_imagen %}
-                        <a href="{{ evidencia.archivo.url }}" target="_blank">
+                        <a href="{{ evidencia.archivo.url }}" target="_blank" title="Ver en tamaño completo">
                             <img src="{{ evidencia.archivo.url }}"
                                  alt="{{ evidencia.descripcion|default:'Evidencia' }}"
                                  class="w-full h-36 object-cover hover:opacity-90 transition">
@@ -144,16 +216,101 @@
                     {% endif %}
                     <div class="p-2">
                         {% if evidencia.descripcion %}
-                            <p class="text-xs font-medium text-gray-700 truncate">{{ evidencia.descripcion }}</p>
+                            <p class="text-xs font-medium text-gray-700 truncate" title="{{ evidencia.descripcion }}">
+                                {{ evidencia.descripcion }}
+                            </p>
                         {% endif %}
-                        <p class="text-[10px] text-gray-400 mt-0.5">{{ evidencia.fecha_subida|date:"d/m/Y H:i" }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">
+                            {{ evidencia.fecha_subida|date:"d/m/Y H:i" }}
+                        </p>
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
+        {% else %}
+        <p class="text-sm text-gray-400 italic text-center py-6">
+            Aún no hay evidencias subidas para esta orden.
+        </p>
         {% endif %}
 
-    </div>
-</div>
+    </div><!-- fin panel-evidencias -->
+
+</div><!-- fin card principal -->
+
+<script>
+    /* ── Lógica de Tabs ──────────────────────────────────────────────── */
+    function activarTab(nombre) {
+        const tabs   = ['hallazgo', 'evidencias'];
+        const activo = 'text-blue-600 border-blue-600';
+        const inactivo = 'text-gray-400 border-transparent hover:text-gray-600';
+
+        tabs.forEach(t => {
+            const btn   = document.getElementById('tab-' + t);
+            const panel = document.getElementById('panel-' + t);
+            if (t === nombre) {
+                btn.classList.remove(...inactivo.split(' '));
+                btn.classList.add(...activo.split(' '));
+                btn.setAttribute('aria-selected', 'true');
+                panel.classList.remove('hidden');
+            } else {
+                btn.classList.remove(...activo.split(' '));
+                btn.classList.add(...inactivo.split(' '));
+                btn.setAttribute('aria-selected', 'false');
+                panel.classList.add('hidden');
+            }
+        });
+    }
+
+    /* ── Preview de nombres de archivos seleccionados ────────────────── */
+    function mostrarNombres(input) {
+        const preview = document.getElementById('nombres-archivos');
+        const files   = Array.from(input.files);
+        if (files.length === 0) {
+            preview.textContent = '';
+            return;
+        }
+        if (files.length === 1) {
+            preview.textContent = files[0].name;
+        } else {
+            preview.textContent = files.length + ' archivos seleccionados';
+        }
+    }
+
+    /* ── Abrir tab de Evidencias automáticamente si hay errores ───────── */
+    {% if errores_evidencia %}
+    document.addEventListener('DOMContentLoaded', function() {
+        activarTab('evidencias');
+    });
+    {% endif %}
+
+    /* ── Feedback visual: botón de subida de evidencias ──────────────── */
+    function iniciarSubida(btn) {
+        const input = document.getElementById('input-archivos');
+
+        // Validación: debe haber al menos un archivo seleccionado
+        if (!input || input.files.length === 0) {
+            alert('Por favor selecciona al menos un archivo antes de guardar.');
+            return false; // Cancela el submit
+        }
+
+        // Spinner SVG inline + texto de progreso
+        const spinner = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">'
+                      + '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>'
+                      + '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>'
+                      + '</svg>';
+
+        const texto = document.getElementById('btn-subir-texto');
+        if (texto) {
+            btn.insertAdjacentHTML('afterbegin', spinner);
+            texto.textContent = ' Subiendo archivos...';
+        }
+
+        btn.disabled = true;
+        btn.classList.add('disabled:opacity-75');
+
+        // Envía el formulario (el return true del onclick lo permite)
+        return true;
+    }
+</script>
 {% endblock %}

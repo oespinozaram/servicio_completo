@@ -185,30 +185,53 @@ def detalle_orden(request, pk):  # O el nombre que tenga tu vista
 @login_required
 def subir_evidencia(request, pk):
     """
-    Recibe el POST multipart del formulario de evidencia desde la vista
-    inspeccion_mecanico, valida la extensión del archivo y lo asocia a
-    la OrdenTrabajo correspondiente.
-    Redirige de vuelta a inspeccion_mecanico al terminar (éxito o error).
+    Procesa la subida de UNO O VARIOS archivos multimedia (fotos/videos)
+    desde la vista inspeccion_mecanico.
+    Itera sobre request.FILES.getlist('archivos') y crea un registro
+    Evidencia por cada archivo válido.
     """
+    import os
+    from .forms import EXTENSIONES_PERMITIDAS
+
     orden = get_object_or_404(OrdenTrabajo, id=pk, sucursal=request.user.sucursal)
 
     if request.method == 'POST':
-        form = EvidenciaForm(request.POST, request.FILES)
-        if form.is_valid():
-            evidencia = form.save(commit=False)
-            evidencia.orden = orden
-            evidencia.save()
-            # Volvemos a la pantalla del mecánico con los archivos frescos
-            return redirect('taller:inspeccion_mecanico', pk=pk)
+        archivos = request.FILES.getlist('archivos')
+        descripcion = request.POST.get('descripcion', '').strip()
 
-        # Si hay errores de validación, regresamos a inspeccion_mecanico
-        # pasando el form con errores para que el template los muestre.
-        return render(request, 'taller/inspeccion_mecanico.html', {
-            'orden': orden,
-            'evidencia_form': form,
-        }, status=422)
+        errores = []
+        guardados = 0
 
-    return redirect('taller:inspeccion_mecanico', pk=pk)
+        for archivo in archivos:
+            _, ext = os.path.splitext(archivo.name)
+            if ext.lower() not in EXTENSIONES_PERMITIDAS:
+                errores.append(
+                    f"'{archivo.name}' tiene un formato no permitido ({ext}). "
+                    f"Solo se aceptan: {', '.join(sorted(EXTENSIONES_PERMITIDAS))}"
+                )
+                continue  # Saltamos este archivo pero seguimos con los demás
+
+            Evidencia.objects.create(
+                orden=orden,
+                archivo=archivo,
+                descripcion=descripcion,
+            )
+            guardados += 1
+
+        if errores and guardados == 0:
+            # Todos los archivos fallaron → volvemos a la pantalla con los errores
+            return render(request, 'taller/inspeccion_mecanico.html', {
+                'orden': orden,
+                'evidencias': orden.evidencias.all(),
+                'errores_evidencia': errores,
+                'guardados_evidencia': guardados,
+            }, status=422)
+
+        # Al menos un archivo se guardó con éxito → volvemos al Kanban
+        # (mismo comportamiento que "Guardar Hallazgo" en agregar_cargo_evidencia)
+        return redirect('taller:kanban')
+
+    return redirect('taller:kanban')
 
 
 @login_required
@@ -405,6 +428,16 @@ def dashboard_inicio(request):
         activo=True,
     )
 
+    # 5. Citas de hoy (solo si el módulo de citas está activo para este tenant)
+    if request.user.tenant.modulo_citas:
+        citas_hoy = Cita.objects.filter(
+            sucursal=sucursal,
+            fecha=hoy,
+            estado='PENDIENTE',
+        ).order_by('hora')
+    else:
+        citas_hoy = Cita.objects.none()
+
     context = {
         'ingreso_total': ingreso_total,
         'ingreso_efectivo': ingreso_efectivo,
@@ -415,6 +448,7 @@ def dashboard_inicio(request):
         'hoy': hoy,
         'proveedores_hoy': proveedores_hoy,
         'dia_actual': dia_actual,
+        'citas_hoy': citas_hoy,
     }
 
     return render(request, 'taller/dashboard_inicio.html', context)

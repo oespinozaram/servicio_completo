@@ -85,10 +85,61 @@
 
     </div>
 
+    {% if request.user.tenant.modulo_citas %}
+    <!-- ── Tarjeta: Citas de Hoy ────────────────────────────────────── -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+
+        <!-- Encabezado -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-800">📅 Citas de Hoy</h3>
+            {% if citas_hoy %}
+            <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                {{ citas_hoy|length }} pendiente{{ citas_hoy|length|pluralize:"" }}
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Lista de citas -->
+        <ul class="divide-y divide-gray-100">
+            {% for cita in citas_hoy %}
+            <li class="px-6 py-3 flex items-center gap-4 hover:bg-gray-50 transition">
+                <!-- Hora (badge) -->
+                <span class="shrink-0 text-sm font-black text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1 w-16 text-center tabular-nums">
+                    {{ cita.hora|time:"H:i" }}
+                </span>
+
+                <!-- Datos de la cita -->
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ cita.nombre_cliente }}</p>
+                    <p class="text-xs text-gray-500 truncate">
+                        {% if cita.bicicleta %}
+                            🚲 {{ cita.bicicleta.marca }} {{ cita.bicicleta.modelo }} ·
+                        {% endif %}
+                        {{ cita.asunto }}
+                    </p>
+                </div>
+
+                <!-- Botón acceso rápido -->
+                <a href="{% url 'taller:agenda' %}"
+                   class="shrink-0 text-xs text-blue-500 hover:text-blue-700 font-semibold transition">
+                    Ver agenda →
+                </a>
+            </li>
+            {% empty %}
+            <li class="px-6 py-5 text-center text-sm text-gray-400 italic">
+                No hay citas programadas para hoy.
+            </li>
+            {% endfor %}
+        </ul>
+
+    </div>
+    {% endif %}
+    <!-- ── Fin Citas de Hoy ─────────────────────────────────────────── -->
+
     <!-- Sección de Últimos Movimientos -->
     <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
         <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-gray-800">Prioridad: Próximas Entregas</h3>
+            <h3 class="text-lg font-bold text-gray-800">🚵🏽 Listas para Entrega</h3>
         </div>
         <ul class="divide-y divide-gray-200">
             {% for orden in proximas_entregas %}

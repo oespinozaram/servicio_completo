@@ -33,6 +33,72 @@
                 </div>
             </div>
 
+            <!-- ── Galería: Evidencias de Inspección ───────────────────────── -->
+            {% with evidencias=orden.evidencias.all %}
+            {% if evidencias %}
+            <div class="mb-8">
+                <!-- Encabezado de sección -->
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xl">📸</span>
+                    <div>
+                        <h3 class="text-base font-black text-gray-800 leading-none">Evidencias de Inspección</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Fotos y videos tomados por el mecánico</p>
+                    </div>
+                    <span class="ml-auto bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded-full">
+                        {{ evidencias|length }}
+                    </span>
+                </div>
+
+                <!-- Grid mobile-first de miniaturas -->
+                <div class="grid grid-cols-2 gap-3">
+                    {% for evidencia in evidencias %}
+                    <div class="relative rounded-xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50">
+
+                        {% if evidencia.es_video %}
+                            <!-- Reproductor de video incrustado -->
+                            <video src="{{ evidencia.archivo.url }}"
+                                   controls
+                                   playsinline
+                                   preload="metadata"
+                                   class="w-full h-32 object-cover rounded-lg shadow-sm">
+                                Tu navegador no soporta video.
+                            </video>
+
+                        {% elif evidencia.es_imagen %}
+                            <!-- Imagen clicable → zoom en pantalla completa -->
+                            <a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener">
+                                <img src="{{ evidencia.archivo.url }}"
+                                     alt="{{ evidencia.descripcion|default:'Evidencia de inspección' }}"
+                                     class="w-full h-32 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+                            </a>
+
+                        {% else %}
+                            <!-- Archivo genérico: enlace de descarga -->
+                            <div class="h-32 flex items-center justify-center bg-gray-100 rounded-lg">
+                                <a href="{{ evidencia.archivo.url }}" target="_blank" rel="noopener" download
+                                   class="flex flex-col items-center gap-1 text-blue-500 text-xs font-medium">
+                                    <span class="text-3xl">📎</span>
+                                    Ver archivo
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <!-- Descripción debajo de la miniatura -->
+                        {% if evidencia.descripcion %}
+                        <p class="text-xs text-gray-500 mt-1 leading-tight px-1 pb-1 truncate"
+                           title="{{ evidencia.descripcion }}">
+                            {{ evidencia.descripcion }}
+                        </p>
+                        {% endif %}
+
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+            <!-- ── Fin Galería ──────────────────────────────────────────────── -->
+
             <!-- MÓDULO PREMIUM: APROBACIÓN DE EVIDENCIAS -->
             {% if orden.estado == 'ESPERANDO_APROBACION' %}
             <div class="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-5 mb-8 shadow-md relative overflow-hidden">
