@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .api import OrdenesListasAPI, OrdenDetalleAPI, CobrarOrdenAPI
 
 app_name = 'taller'
 
@@ -35,4 +36,7 @@ urlpatterns = [
     path('retencion/', views.panel_retencion, name='panel_retencion'),
     path('retencion/<int:pk>/marcar/', views.marcar_recordatorio, name='marcar_recordatorio'),
     path('orden/<int:pk>/subir-evidencia/', views.subir_evidencia, name='subir_evidencia'),
+    path('api/v1/ordenes/listas/', OrdenesListasAPI.as_view(), name='api_ordenes_listas'),
+    path('api/v1/ordenes/<int:pk>/', OrdenDetalleAPI.as_view(), name='api_orden_detalle'),
+    path('api/v1/ordenes/<int:pk>/cobrar/', CobrarOrdenAPI.as_view(), name='api_orden_cobrar'),
 ]

@@ -3,6 +3,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.urls import reverse_lazy
 from .models import Prospecto
+from django.views.generic.base import TemplateView
 
 
 def landing_page(request):
@@ -48,3 +49,7 @@ def solicitar_demo(request):
 
     # Tanto en éxito como en GET directo, redirigimos a la landing
     return redirect('landing_page')
+
+
+class LegalView(TemplateView):
+    template_name = 'legal.html'
