@@ -20,9 +20,15 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views as core_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from inventario.api import InventarioListAPI, RegistrarVentaPOSAPI
+from clientes.api import ClienteListAPI
+from core.api import TallerConfigAPI
+
 
 urlpatterns = [
     path('', core_views.landing_page, name='landing_page'),
+    path('legal/', core_views.LegalView.as_view(), name='legal'),
     path('login/', core_views.LoginInteligenteView.as_view(), name='login'),
     path('admin/', admin.site.urls),
     path('taller/', include('taller.urls')),
@@ -31,6 +37,18 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('api/', include('core.urls')),
     path('inventario/', include('inventario.urls')),
+
+    # === RUTAS DE LA API (v1) ===
+    # Endpoints para iniciar sesión desde Flet
+    path('api/v1/auth/login/', TokenObtainPairView.as_view(), name='api_login'),
+    path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='api_refresh'),
+
+    # Endpoint del catálogo
+    path('api/v1/inventario/', InventarioListAPI.as_view(), name='api_inventario'),
+    path('api/v1/ventas/', RegistrarVentaPOSAPI.as_view(), name='api_ventas_pos'),
+
+    path('api/v1/clientes/', ClienteListAPI.as_view(), name='api_clientes'),
+    path('api/v1/config/', TallerConfigAPI.as_view(), name='api_config'),
 ]
 
 if settings.DEBUG:
