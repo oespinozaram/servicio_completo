@@ -20,6 +20,7 @@ from .decorators import admin_requerido
 from core.decorators import modulo_requerido, roles_permitidos
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
+from .utils import enviar_bienvenida_whatsapp
 
 
 Usuario = get_user_model()
@@ -128,6 +129,25 @@ def nueva_orden(request):
                 # orden.total_orden += servicio.precio_base
                 # orden.save()
             # --- FIN NUEVA LÓGICA ---
+
+            # ── Notificación de Recepción por WhatsApp ─────────────────────
+            # Contamos TODAS las órdenes del cliente (ya incluye la que acabamos de guardar).
+            # Si el conteo es exactamente 1, esta es su primera vez en el taller.
+            total_ordenes_cliente = OrdenTrabajo.objects.filter(
+                cliente=orden.cliente
+            ).count()
+
+            es_primera_vez = (total_ordenes_cliente == 1)
+
+            # Disparamos el mensaje de recepción (con o sin bloque legal).
+            # Si la API de Meta falla, el error queda en el log pero NO interrumpe el flujo.
+            enviar_bienvenida_whatsapp(
+                telefono=orden.cliente.telefono,
+                nombre_cliente=orden.cliente.nombre,
+                marca_bici=f"{orden.bicicleta.marca} {orden.bicicleta.modelo}",
+                es_primera_vez=es_primera_vez,
+            )
+            # ── Fin Notificación ───────────────────────────────────────────
 
             # Redirigimos al Kanban tras guardar con éxito
             return redirect('taller:kanban')
